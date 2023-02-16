@@ -1,0 +1,112 @@
+openapi: 3.0.0
+tags:
+  - name: People
+    description: Operations to manage people
+servers:
+  - url: 'http://localhost:1337'
+    description: 'local'
+info:
+  description: people api - rust for fun.
+  version: 1.0.0
+  title: people api - rust for fun.
+  contact:
+    email: me@yo.com
+paths:
+  /people:
+    get:
+      summary: Get a list of all people
+      description: 'Get a list of all people'
+      parameters: []
+      tags:
+        - People
+      operationId: '1'
+      responses:
+        '200':
+          description: list of people
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/People'
+    post:
+      summary: Add a new person to people
+      description: 'add a new person'
+      parameters: []
+      tags:
+        - People
+      operationId: '2'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+      responses:
+        '200':
+          description: person was added to people
+    put:
+      summary: Update a new person to people
+      description: 'add a new person'
+      parameters: []
+      tags:
+        - People
+      operationId: '3'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Person'
+      responses:
+        '200':
+          description: person was added to people
+  '/people/{id}':
+    get:
+      summary: Get a person
+      description: 'Get a person'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Person ID.
+      tags:
+        - People
+      operationId: '4'
+      responses:
+        '200':
+          description: get a person
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+    delete:
+      summary: delete a person
+      description: 'Delete a person'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Person ID.
+      tags:
+        - People
+      operationId: '5'
+      responses:
+        '200':
+          description: person was deleted
+components:
+  schemas:
+    People:
+      type: array
+      items: {
+        $ref: "#/components/schemas/Person"
+      }
+    Person:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 'ab856d8b-012a-450a-b2f4-f0ab7554741b'
+        name:
+          type: string
+          example: "Lui"
