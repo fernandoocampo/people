@@ -20,7 +20,8 @@ mod memory_tests {
         ];
         let runtime = Runtime::new().expect("Unable to create a runtime");
         // When
-        let got = runtime.block_on(get_people(store));
+        let mut got = runtime.block_on(get_people(store));
+        got.sort();
         // Then
         assert_eq!(got, expected_result);
     }

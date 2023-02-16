@@ -4,13 +4,13 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Person {
     pub id: PersonID,
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct PersonID(pub String);
 
 impl Person {
