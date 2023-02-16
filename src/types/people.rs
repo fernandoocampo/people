@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Person {
     pub id: PersonID,
     pub name: String,

@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod memory_tests {
     use crate::storage::memory::Store;
-    use crate::types::people::{PersonID, Person};
+    use crate::types::people::{Person, PersonID};
     use tokio::runtime::Runtime;
-    
+
     #[test]
     fn test_load_people() {
         // Given
@@ -16,7 +16,7 @@ mod memory_tests {
             Person {
                 id: PersonID("2".to_string()),
                 name: "Fernando".to_string(),
-            }
+            },
         ];
         let runtime = Runtime::new().expect("Unable to create a runtime");
         // When

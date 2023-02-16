@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::types::{
-    pets::{Pet, PetID},
     people::{Person, PersonID},
+    pets::{Pet, PetID},
 };
 
 #[derive(Debug, Clone)]
