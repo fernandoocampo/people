@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod handler_tests {
-    use std::collections::HashMap;
-    use crate::storage::memory::Store;
-    use tokio::runtime::Runtime;
-    use crate::people::handler;
-    use crate::types::people::{Person, PersonID};
     use crate::errors::error;
+    use crate::people::handler;
+    use crate::storage::memory::Store;
+    use crate::types::people::{Person, PersonID};
+    use std::collections::HashMap;
+    use tokio::runtime::Runtime;
     use warp::{Rejection, Reply};
 
     #[test]
@@ -39,20 +39,23 @@ mod handler_tests {
         let want_response = want.unwrap().into_response();
         assert_eq!(got_response.status(), want_response.status());
 
-        let got_body_bytes = runtime.block_on(
-            hyper::body::to_bytes(got_response.into_body())
-        ).unwrap();
+        let got_body_bytes = runtime
+            .block_on(hyper::body::to_bytes(got_response.into_body()))
+            .unwrap();
         let got_body_string = String::from_utf8(got_body_bytes.to_vec()).unwrap();
 
-        let want_body_bytes = runtime.block_on(
-            hyper::body::to_bytes(want_response.into_body())
-        ).unwrap();
+        let want_body_bytes = runtime
+            .block_on(hyper::body::to_bytes(want_response.into_body()))
+            .unwrap();
         let want_body_string = String::from_utf8(want_body_bytes.to_vec()).unwrap();
 
         assert_eq!(got_body_string, want_body_string);
     }
 
-    fn new_people_result(people: Vec<Person>, err: Option<error::Error>) -> Result<impl Reply, Rejection> {
+    fn new_people_result(
+        people: Vec<Person>,
+        err: Option<error::Error>,
+    ) -> Result<impl Reply, Rejection> {
         if err.is_some() {
             return Err(warp::reject::custom(err.unwrap()));
         }

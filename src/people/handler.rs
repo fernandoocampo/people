@@ -1,9 +1,9 @@
 use crate::errors::error;
-use crate::storage::memory::{Store};
+use crate::storage::memory::Store;
 use crate::types::{
-    pagination, 
-    people::{Person,PersonID}, 
-    pets::{Pet, PetID}
+    pagination,
+    people::{Person, PersonID},
+    pets::{Pet, PetID},
 };
 use std::collections::HashMap;
 use warp::{hyper::StatusCode, reject::Reject, Rejection, Reply};
