@@ -23,7 +23,7 @@ pub async fn get_people(
 
     let pagination = pagination::extract_pagination(params)?;
     let res: Vec<Person> = store.people.read().await.values().cloned().collect();
-    let res = &res[pagination.start..pagination.end];
+    let res: &[Person] = &res[pagination.start..pagination.end];
 
     Ok(warp::reply::json(&res))
 }
