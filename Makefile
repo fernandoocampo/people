@@ -16,4 +16,4 @@ lint-fmt: ## checkc that code format is ok.
 
 .PHONY: lint-clippy
 lint-clippy: ## apply linter clippy.
-	cargo clippy -- -D warnings
+	cargo clippy  --future-incompat-report -- -D warnings
