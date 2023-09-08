@@ -52,6 +52,50 @@ mod handler_tests {
         assert_eq!(got_body_string, want_body_string);
     }
 
+    #[test]
+    fn test_get_person() {
+        // Given
+        let store = Store::new();
+        let person_id = "1".to_string();
+        let expected_person = Person {
+            id: PersonID("1".to_string()),
+            name: "Luis".to_string(),
+        };
+        let runtime = Runtime::new().expect("unable to create runtime to test get person");
+        // When
+        let response = runtime.block_on(handler::get_person(person_id, store));
+        // Then
+        let got_body_bytes = runtime
+            .block_on(hyper::body::to_bytes(
+                response.unwrap().into_response().into_body(),
+            ))
+            .unwrap();
+        let got: Person = serde_json::from_slice(&got_body_bytes).unwrap();
+        assert_eq!(expected_person, got);
+    }
+
+    #[test]
+    fn test_get_not_found_person() {
+        // Given
+        let store = Store::new();
+        let person_id = "2000".to_string();
+        let runtime = Runtime::new().expect("unable to create runtime to test get person");
+        // When
+        let got = runtime.block_on(handler::get_person(person_id, store));
+        // Then
+        assert_eq!(true, got.is_err());
+
+        let got_error = match got {
+            Ok(_) => panic!("unexpected value"),
+            Err(err) => err,
+        };
+
+        if let Some(e) = got_error.find::<error::Error>() {
+            assert_eq!(*e, error::Error::PersonNotFound);
+            return;
+        }
+    }
+
     fn new_people_result(
         people: Vec<Person>,
         err: Option<error::Error>,

@@ -9,12 +9,12 @@ pub async fn run() {
     let store = Store::new();
     let store_filter = warp::any().map(move || store.clone());
 
+    println!("🛤️\tEstablishing API routes...");
+
     let cors = warp::cors()
         .allow_any_origin()
         .allow_header("content-type")
         .allow_methods(&[Method::PUT, Method::DELETE, Method::GET, Method::POST]);
-
-    println!("🛤️\tEstablishing API routes...");
 
     println!("👤\tCreating people endpoint: GET /people");
     let get_people = warp::get()
@@ -24,7 +24,18 @@ pub async fn run() {
         .and(store_filter.clone())
         .and_then(people::handler::get_people);
 
-    let routes = get_people.with(cors).recover(error::return_error);
+    println!("👤\tCreating get person endpoint: GET /people/{{id}}");
+    let get_person = warp::get()
+        .and(warp::path("people"))
+        .and(warp::path::param::<String>())
+        .and(warp::path::end())
+        .and(store_filter.clone())
+        .and_then(people::handler::get_person);
+
+    let routes = get_people
+        .or(get_person)
+        .with(cors)
+        .recover(error::return_error);
 
     println!("🍏\tServer has started at :3030");
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
