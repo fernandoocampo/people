@@ -50,6 +50,16 @@ once you finished just hit `ctrl + c`
 
 ## How to call the API?
 
+* Create a person endpoint
+
+```sh
+curl -H "Content-Type: application/json" \
+--data '{"id":"3", "name":"Esme"}' \
+-X POST http://localhost:3030/people
+
+Person added
+```
+
 * Calling get people endpoint
 
 ```sh

@@ -97,12 +97,41 @@ mod handler_tests {
     }
 
     #[test]
+    fn test_create_person() {
+        // Given
+        let store = Store::new();
+        let person = Person {
+            id: PersonID("3".to_string()),
+            name: "esme".to_string(),
+        };
+        let expected_result = "Person added".to_string();
+        let runtime = Runtime::new().expect("unable to create runtime to test create person");
+        // When
+        let got = runtime.block_on(handler::add_person(store, person));
+        // Then
+        assert_eq!(false, got.is_err());
+
+        let got_result = match got {
+            Ok(reply) => {
+                let result = runtime
+                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .unwrap();
+                let response = std::str::from_utf8(&result).unwrap();
+                response.to_string()
+            }
+            Err(err) => panic!("unexpected value: {:?}", err),
+        };
+
+        assert_eq!(got_result, expected_result);
+    }
+
+    #[test]
     fn test_update_person() {
         // Given
         let store = Store::new();
         let person_id = "1".to_string();
         let person = Person {
-            id: PersonID("1".to_string()),
+            id: PersonID(person_id.clone()),
             name: "Luisfer".to_string(),
         };
         let expected_result = "Person updated".to_string();
@@ -132,7 +161,7 @@ mod handler_tests {
         let store = Store::new();
         let person_id = "2000".to_string();
         let person = Person {
-            id: PersonID("2000".to_string()),
+            id: PersonID(person_id.clone()),
             name: "not found".to_string(),
         };
         let runtime = Runtime::new().expect("unable to create runtime to test update person");

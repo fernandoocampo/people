@@ -52,7 +52,7 @@ pub async fn update_person(
 pub async fn add_person(store: Store, person: Person) -> Result<impl warp::Reply, warp::Rejection> {
     store.people.write().await.insert(person.id.clone(), person);
 
-    Ok(warp::reply::with_status("People added", StatusCode::OK))
+    Ok(warp::reply::with_status("Person added", StatusCode::OK))
 }
 
 pub async fn delete_person(id: String, store: Store) -> Result<impl warp::Reply, warp::Rejection> {
