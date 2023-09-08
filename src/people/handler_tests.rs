@@ -96,6 +96,62 @@ mod handler_tests {
         }
     }
 
+    #[test]
+    fn test_update_person() {
+        // Given
+        let store = Store::new();
+        let person_id = "1".to_string();
+        let person = Person {
+            id: PersonID("1".to_string()),
+            name: "Luisfer".to_string(),
+        };
+        let expected_result = "Person updated".to_string();
+        let runtime = Runtime::new().expect("unable to create runtime to test update person");
+        // When
+        let got = runtime.block_on(handler::update_person(person_id, person, store));
+        // Then
+        assert_eq!(false, got.is_err());
+
+        let got_result = match got {
+            Ok(reply) => {
+                let result = runtime
+                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .unwrap();
+                let response = std::str::from_utf8(&result).unwrap();
+                response.to_string()
+            }
+            Err(err) => panic!("unexpected value: {:?}", err),
+        };
+
+        assert_eq!(got_result, expected_result);
+    }
+
+    #[test]
+    fn test_update_person_but_not_found() {
+        // Given
+        let store = Store::new();
+        let person_id = "2000".to_string();
+        let person = Person {
+            id: PersonID("2000".to_string()),
+            name: "not found".to_string(),
+        };
+        let runtime = Runtime::new().expect("unable to create runtime to test update person");
+        // When
+        let got = runtime.block_on(handler::update_person(person_id, person, store));
+        // Then
+        assert_eq!(true, got.is_err());
+
+        let got_error = match got {
+            Ok(_) => panic!("unexpected value"),
+            Err(err) => err,
+        };
+
+        if let Some(e) = got_error.find::<error::Error>() {
+            assert_eq!(*e, error::Error::PersonNotFound);
+            return;
+        }
+    }
+
     fn new_people_result(
         people: Vec<Person>,
         err: Option<error::Error>,

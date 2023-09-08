@@ -32,8 +32,18 @@ pub async fn run() {
         .and(store_filter.clone())
         .and_then(people::handler::get_person);
 
+    println!("👤\tCreating update person endpoint: PUT /people/{{id}}");
+    let put_person = warp::put()
+        .and(warp::path("people"))
+        .and(warp::path::param::<String>())
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and(store_filter.clone())
+        .and_then(people::handler::update_person);
+
     let routes = get_people
         .or(get_person)
+        .or(put_person)
         .with(cors)
         .recover(error::return_error);
 

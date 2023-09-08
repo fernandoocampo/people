@@ -53,18 +53,28 @@ once you finished just hit `ctrl + c`
 * Calling get people endpoint
 
 ```sh
-➜  ~ curl -X GET http://localhost:3030/people
+curl -X GET http://localhost:3030/people
 [{"id":"1","name":"Luis"},{"id":"2","name":"Fernando"}]
 ```
 
 * Calling get a person endpoint
 
 ```sh
-➜  ~ curl -X GET http://localhost:3030/people/1
+curl -X GET http://localhost:3030/people/1
 {"id":"1","name":"Luis"}
 ```
 
 ```sh
-➜  ~ curl -X GET http://localhost:3030/people/200
+curl -X GET http://localhost:3030/people/200
 Person not found
+```
+
+* Update a person endpoint
+
+```sh
+curl -H "Content-Type: application/json" \
+--data '{"id":"1", "name":"LuisFer"}' \
+-X PUT http://localhost:3030/people/1
+
+Person updated
 ```

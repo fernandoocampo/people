@@ -38,8 +38,8 @@ pub async fn get_person(id: String, store: Store) -> Result<impl warp::Reply, wa
 
 pub async fn update_person(
     id: String,
-    store: Store,
     person: Person,
+    store: Store,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match store.people.write().await.get_mut(&PersonID(id)) {
         Some(p) => *p = person,
