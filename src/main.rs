@@ -1,8 +1,11 @@
+pub mod application;
 pub mod errors;
 pub mod people;
 pub mod storage;
 pub mod types;
 
-fn main() {
-    println!("Hello, world!");
+#[tokio::main]
+async fn main() {
+    println!("⏱️\tStarting people api application...");
+    application::app::run().await;
 }
