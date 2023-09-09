@@ -43,6 +43,9 @@ you will see something like this
 🗿	Starting database connection...
 🛤️  Establishing API routes...
 👤	Creating people endpoint: GET /people
+👤	Creating get person endpoint: GET /people/{id}
+👤	Creating update person endpoint: PUT /people/{id}
+👤	Creating add person endpoint: POST /people
 🍏	Server has started at :3030
 ```
 
@@ -87,4 +90,13 @@ curl -H "Content-Type: application/json" \
 -X PUT http://localhost:3030/people/1
 
 Person updated
+```
+
+* Delete a person endpoint
+
+```sh
+curl -H "Content-Type: application/json" \
+-X DELETE http://localhost:3030/people/2
+
+Person deleted
 ```

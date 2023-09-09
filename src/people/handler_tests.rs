@@ -86,7 +86,7 @@ mod handler_tests {
         assert_eq!(true, got.is_err());
 
         let got_error = match got {
-            Ok(_) => panic!("unexpected value"),
+            Ok(value) => panic!("unexpected result {:?}", value.into_response()),
             Err(err) => err,
         };
 
@@ -119,10 +119,58 @@ mod handler_tests {
                 let response = std::str::from_utf8(&result).unwrap();
                 response.to_string()
             }
-            Err(err) => panic!("unexpected value: {:?}", err),
+            Err(err) => panic!("unexpected error: {:?}", err),
         };
 
         assert_eq!(got_result, expected_result);
+    }
+
+    #[test]
+    fn test_delete_person() {
+        // Given
+        let store = Store::new();
+        let person_id = "2".to_string();
+        let expected_result = "Person deleted";
+        let runtime = Runtime::new().expect("unable to create runtime to test delete person");
+        // When
+        let got = runtime.block_on(handler::delete_person(person_id, store));
+        // Then
+        assert_eq!(false, got.is_err());
+
+        let got_result = match got {
+            Ok(reply) => {
+                let result = runtime
+                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .unwrap();
+                let response = std::str::from_utf8(&result).unwrap();
+                response.to_string()
+            }
+            Err(err) => panic!("unexpected error: {:?}", err),
+        };
+
+        assert_eq!(got_result, expected_result);
+    }
+
+    #[test]
+    fn test_delete_person_but_not_found() {
+        // Given
+        let store = Store::new();
+        let person_id = "2000".to_string();
+        let runtime = Runtime::new().expect("unable to create runtime to test delete person");
+        // When
+        let got = runtime.block_on(handler::delete_person(person_id, store));
+        // Then
+        assert_eq!(true, got.is_err());
+
+        let got_error = match got {
+            Ok(value) => panic!("unexpected result {:?}", value.into_response()),
+            Err(err) => err,
+        };
+
+        if let Some(e) = got_error.find::<error::Error>() {
+            assert_eq!(*e, error::Error::PersonNotFound);
+            return;
+        }
     }
 
     #[test]
@@ -171,7 +219,7 @@ mod handler_tests {
         assert_eq!(true, got.is_err());
 
         let got_error = match got {
-            Ok(_) => panic!("unexpected value"),
+            Ok(value) => panic!("unexpected result {:?}", value.into_response()),
             Err(err) => err,
         };
 

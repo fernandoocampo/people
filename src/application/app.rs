@@ -49,10 +49,19 @@ pub async fn run() {
         .and(warp::body::json())
         .and_then(people::handler::add_person);
 
+    println!("👤\tCreating delete person endpoint: DELETE /people/{{id}}");
+    let delete_person = warp::delete()
+        .and(warp::path("people"))
+        .and(warp::path::param::<String>())
+        .and(warp::path::end())
+        .and(store_filter.clone())
+        .and_then(people::handler::delete_person);
+
     let routes = get_people
         .or(get_person)
         .or(put_person)
         .or(post_person)
+        .or(delete_person)
         .with(cors)
         .recover(error::return_error);
 
