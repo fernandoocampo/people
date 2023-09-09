@@ -12,7 +12,9 @@ This is a microservice project built on Rust. The idea is to learn about buildin
 
 ## How to test it?
 
-I added a Makefile, but feel free to run them as they are.
+I added a Makefile, but feel free to run them as they are using cargo. I tried to add unit tests as much as possible to learn how to use them, I found many issues trying to test Warp due to lack of documentation, but I managed to do it.
+
+Rust conventions suggest adding the unit tests in the same file where you have your code logic, but we're used to adding different files for that purpose, so I followed the Go convention.
 
 ```sh
 make test

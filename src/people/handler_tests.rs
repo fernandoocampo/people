@@ -6,6 +6,7 @@ mod handler_tests {
     use crate::types::people::{Person, PersonID};
     use std::collections::HashMap;
     use tokio::runtime::Runtime;
+    use warp::http::StatusCode;
     use warp::{Rejection, Reply};
 
     #[test]
@@ -113,8 +114,10 @@ mod handler_tests {
 
         let got_result = match got {
             Ok(reply) => {
+                let reply_response = reply.into_response();
+                assert_eq!(StatusCode::OK, reply_response.status());
                 let result = runtime
-                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .block_on(hyper::body::to_bytes(reply_response.into_body()))
                     .unwrap();
                 let response = std::str::from_utf8(&result).unwrap();
                 response.to_string()
@@ -139,8 +142,10 @@ mod handler_tests {
 
         let got_result = match got {
             Ok(reply) => {
+                let reply_response = reply.into_response();
+                assert_eq!(StatusCode::OK, reply_response.status());
                 let result = runtime
-                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .block_on(hyper::body::to_bytes(reply_response.into_body()))
                     .unwrap();
                 let response = std::str::from_utf8(&result).unwrap();
                 response.to_string()
@@ -191,8 +196,10 @@ mod handler_tests {
 
         let got_result = match got {
             Ok(reply) => {
+                let reply_response = reply.into_response();
+                assert_eq!(StatusCode::OK, reply_response.status());
                 let result = runtime
-                    .block_on(hyper::body::to_bytes(reply.into_response().into_body()))
+                    .block_on(hyper::body::to_bytes(reply_response.into_body()))
                     .unwrap();
                 let response = std::str::from_utf8(&result).unwrap();
                 response.to_string()
