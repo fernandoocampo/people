@@ -1,6 +1,6 @@
 .PHONY: run
 run: ## run the application using cargo.
-	cargo run
+	RUST_LOG=debug LOG_SYSTEM=log4rs cargo run
 
 .PHONY: fmt
 fmt: ## format basecode using cargo.

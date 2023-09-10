@@ -2,7 +2,7 @@ use std::{fmt, fmt::Display, fmt::Formatter, num::ParseIntError};
 use warp::reject::Reject;
 use warp::{
     filters::{body::BodyDeserializeError, cors::CorsForbidden},
-    hyper::StatusCode,
+    http::StatusCode,
     Rejection, Reply,
 };
 

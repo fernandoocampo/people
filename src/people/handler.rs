@@ -6,7 +6,7 @@ use crate::types::{
     pets::{Pet, PetID},
 };
 use std::collections::HashMap;
-use warp::{hyper::StatusCode, reject::Reject, Rejection, Reply};
+use warp::{http::StatusCode, reject::Reject, Rejection, Reply};
 
 #[derive(Debug)]
 struct InvalidID;
@@ -15,13 +15,17 @@ impl Reject for InvalidID {}
 pub async fn get_people(
     params: HashMap<String, String>,
     store: Store,
+    id: String,
 ) -> Result<impl Reply, Rejection> {
+    log::debug!("{} start querying people", id);
     if params.is_empty() {
+        log::debug!("{} No pagination used", id);
         let res: Vec<Person> = store.people.read().await.values().cloned().collect();
         return Ok(warp::reply::json(&res));
     }
 
     let pagination = pagination::extract_pagination(params)?;
+    log::debug!("{} pagination set {:?}", id, &pagination);
     let mut res: Vec<Person> = store.people.read().await.values().cloned().collect();
     res.sort();
     let res: &[Person] = &res[pagination.start..pagination.end];

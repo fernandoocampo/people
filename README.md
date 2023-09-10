@@ -35,13 +35,14 @@ make run
 or
 
 ```sh
-cargo run
+RUST_LOG=debug cargo run
 ```
 
 you will see something like this
 
 ```sh
 ⏱️	Starting people api application...
+🪵	Initializing logger...
 🗿	Starting database connection...
 🛤️  Establishing API routes...
 👤	Creating people endpoint: GET /people
@@ -52,6 +53,14 @@ you will see something like this
 ```
 
 once you finished just hit `ctrl + c`
+
+* another possible values for RUST_LOG
+
+error
+warn
+info
+debug
+trace
 
 ## How to call the API?
 
@@ -69,6 +78,13 @@ Person added
 
 ```sh
 curl -X GET http://localhost:3030/people
+[{"id":"1","name":"Luis"},{"id":"2","name":"Fernando"}]
+```
+
+with params
+
+```sh
+curl -X GET 'http://localhost:3030/people?start=0&end=2'
 [{"id":"1","name":"Luis"},{"id":"2","name":"Fernando"}]
 ```
 
