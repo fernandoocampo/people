@@ -27,13 +27,11 @@ mod handler_tests {
             },
         ];
 
-        let any_id = "1";
-
         let want = new_people_result(expected_people, None);
 
         let runtime = Runtime::new().expect("Unable to create a runtime");
         // When
-        let got = runtime.block_on(handler::get_people(params, store, any_id.to_string()));
+        let got = runtime.block_on(handler::get_people(params, store));
         // Then
         assert_eq!(got.is_err(), want.is_err());
         // assert_eq!(got.unwrap_err(), expected_result.unwrap_err());

@@ -3,6 +3,7 @@ use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Logger, Root};
 use log4rs::encode::json::JsonEncoder;
 use std::env;
+use tracing_subscriber::fmt::format::FmtSpan;
 use warp::{http::Method, Filter};
 
 use crate::errors::error;
@@ -19,8 +20,6 @@ pub async fn run() {
 
     log::info!("🪜 \tEstablishing API routes...");
 
-    let id_filter = warp::any().map(|| uuid::Uuid::new_v4().to_string());
-
     let cors = warp::cors()
         .allow_any_origin()
         .allow_header("content-type")
@@ -32,8 +31,15 @@ pub async fn run() {
         .and(warp::path::end())
         .and(warp::query())
         .and(store_filter.clone())
-        .and(id_filter)
-        .and_then(people::handler::get_people);
+        .and_then(people::handler::get_people)
+        .with(warp::trace(|info| {
+            tracing::info_span!(
+                "get_people request",
+                method = %info.method(),
+                path = %info.path(),
+                id = %uuid::Uuid::new_v4(),
+            )
+        }));
 
     log::info!("👤\tCreating get person endpoint: GET /people/{{id}}");
     let get_person = warp::get()
@@ -68,17 +74,17 @@ pub async fn run() {
         .and(store_filter.clone())
         .and_then(people::handler::delete_person);
 
-    let wrap_log = warp::log::custom(|info| {
-        log::info!(
-            "{} {} {} {:?} from {} with {:?}",
-            info.method(),
-            info.path(),
-            info.status(),
-            info.elapsed(),
-            info.remote_addr().unwrap(),
-            info.request_headers(),
-        );
-    });
+    // let wrap_log = warp::log::custom(|info| {
+    //     log::info!(
+    //         "{} {} {} {:?} from {} with {:?}",
+    //         info.method(),
+    //         info.path(),
+    //         info.status(),
+    //         info.elapsed(),
+    //         info.remote_addr().unwrap(),
+    //         info.request_headers(),
+    //     );
+    // });
 
     let routes = get_people
         .or(get_person)
@@ -86,7 +92,7 @@ pub async fn run() {
         .or(post_person)
         .or(delete_person)
         .with(cors)
-        .with(wrap_log)
+        .with(warp::trace::request())
         .recover(error::return_error);
 
     log::info!("🍏\tStarting server at :3030");
@@ -95,13 +101,7 @@ pub async fn run() {
 
 fn initialize_logger() {
     let log_system = env::var("LOG_SYSTEM");
-    // match log_system {
-    //     Some(log_system) => init_specific_logger(log_system.to_str().unwrap()),
-    //     None => {
-    //         eprintln!("LOG_SYSTEM: log4rs");
-    //         initialize_log4rs()
-    //     }
-    // }
+
     match log_system {
         Ok(log_system) => init_specific_logger(&log_system),
         Err(_) => {
@@ -114,6 +114,7 @@ fn initialize_logger() {
 fn init_specific_logger(log_system: &str) {
     eprintln!("LOG_SYSTEM: {}", log_system);
     match log_system {
+        "tracing" => initialize_tracing(),
         "envlogger" => initialize_env_logger(),
         "log4rs" => initialize_log4rs(),
         _ => initialize_log4rs(),
@@ -160,4 +161,19 @@ fn initialize_log4rs() {
 
     log4rs::init_config(config).unwrap();
     log::info!("🪵\tUsing log4rs");
+}
+
+fn initialize_tracing() {
+    tracing_subscriber::fmt()
+        // determine which traces to record
+        .with_env_filter(new_tracing_log_filter())
+        // record an event when each span closes
+        // used to time our routes' durations!
+        .with_span_events(FmtSpan::CLOSE)
+        // activate subscriber
+        .init();
+}
+
+fn new_tracing_log_filter() -> String {
+    env::var("RUST_LOG").unwrap_or_else(|_| "people=debug,warp=error".to_owned())
 }
