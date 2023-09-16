@@ -17,3 +17,12 @@ lint-fmt: ## checkc that code format is ok.
 .PHONY: lint-clippy
 lint-clippy: ## apply linter clippy.
 	cargo clippy  --future-incompat-report -- -D warnings
+
+.PHONY: start-services
+start-services: ## start database
+	docker compose -f docker-compose.yml up
+
+.PHONY: stop-services
+stop-services: ## stop database
+	docker compose down --volumes
+

@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  database:
+    image: postgres:14.3
+    environment:
+      POSTGRES_USER: pipol
+      POSTGRES_PASSWORD: pipol
+      POSTGRES_DB: pipol
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./data/docker-entrypoint-initdb.d/01-enable-uuid-ossp.sql:/docker-entrypoint-initdb.d/01-enable-uuid-ossp.sql
+    ports:
+      - "5432:5432"
+  sampledata:
+    image: postgres:14.3
+    environment:
+      PGPASSWORD: pipol
+    depends_on:
+      - database
+    entrypoint: /bin/sh -c
+    command: >
+      "
+        sleep 10;
+        psql -h database -d pipol -U pipol -a -f /sample-data.sql
+      "
+    volumes:
+      - ./data/sample-data.sql:/sample-data.sql
+
+volumes:
+  postgres:

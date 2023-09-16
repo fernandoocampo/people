@@ -2,8 +2,10 @@
 mod handler_tests {
     use crate::errors::error;
     use crate::people::handler;
-    use crate::storage::memory::Store;
-    use crate::types::people::{Person, PersonID};
+    use crate::people::storage;
+    use crate::types::people::{NewPerson, Person, PersonID, SavePersonSuccess};
+    use crate::types::pets::Pet;
+    use async_trait::async_trait;
     use std::collections::HashMap;
     use tokio::runtime::Runtime;
     use warp::{http::StatusCode, Rejection, Reply};
@@ -11,10 +13,22 @@ mod handler_tests {
     #[test]
     fn test_get_people() {
         // Given
-        let store = Store::new();
+        let people_store = vec![
+            Person {
+                id: PersonID("1".to_string()),
+                name: "Luis".to_string(),
+            },
+            Person {
+                id: PersonID("2".to_string()),
+                name: "Fernando".to_string(),
+            },
+        ];
+
+        let store = DummyStore::new_with_get_people(people_store, false);
+
         let mut params: HashMap<String, String> = HashMap::new();
-        params.insert(String::from("start"), String::from("0"));
-        params.insert(String::from("end"), String::from("2"));
+        params.insert(String::from("offset"), String::from("0"));
+        params.insert(String::from("limit"), String::from("2"));
 
         let expected_people: Vec<Person> = vec![
             Person {
@@ -55,7 +69,11 @@ mod handler_tests {
     #[test]
     fn test_get_person() {
         // Given
-        let store = Store::new();
+        let person_store = Person {
+            id: PersonID("1".to_string()),
+            name: "Luis".to_string(),
+        };
+        let store = DummyStore::new_with_get_person(Some(person_store), false);
         let person_id = "1".to_string();
         let expected_person = Person {
             id: PersonID("1".to_string()),
@@ -77,7 +95,7 @@ mod handler_tests {
     #[test]
     fn test_get_not_found_person() {
         // Given
-        let store = Store::new();
+        let store = DummyStore::new_with_get_person(None, true);
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test get person");
         // When
@@ -91,7 +109,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::PersonNotFound);
+            assert_eq!(*e, error::Error::DatabaseQueryError);
             return;
         }
     }
@@ -99,15 +117,16 @@ mod handler_tests {
     #[test]
     fn test_create_person() {
         // Given
-        let store = Store::new();
         let person = Person {
             id: PersonID("3".to_string()),
             name: "esme".to_string(),
         };
-        let expected_result = "Person added".to_string();
+        let new_person = NewPerson::new("esme".to_string());
+        let mut expected_result = SavePersonSuccess { id: "".to_string() };
+        let store = DummyStore::new_with_add_person(Some(person), false);
         let runtime = Runtime::new().expect("unable to create runtime to test create person");
         // When
-        let got = runtime.block_on(handler::add_person(store, person));
+        let got = runtime.block_on(handler::add_person(store, new_person));
         // Then
         assert_eq!(false, got.is_err());
 
@@ -124,15 +143,18 @@ mod handler_tests {
             Err(err) => panic!("unexpected error: {:?}", err),
         };
 
-        assert_eq!(got_result, expected_result);
+        let got_person_id: SavePersonSuccess = serde_json::from_str(got_result.as_str()).unwrap();
+        expected_result.id = got_person_id.id.clone();
+
+        assert_eq!(got_person_id, expected_result);
     }
 
     #[test]
     fn test_delete_person() {
         // Given
-        let store = Store::new();
+        let store = DummyStore::new_with_delete_person(false);
         let person_id = "2".to_string();
-        let expected_result = "Person deleted";
+        let expected_result = "Person 2 deleted";
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
         // When
         let got = runtime.block_on(handler::delete_person(person_id, store));
@@ -158,7 +180,7 @@ mod handler_tests {
     #[test]
     fn test_delete_person_but_not_found() {
         // Given
-        let store = Store::new();
+        let store = DummyStore::new_with_delete_person(true);
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
         // When
@@ -172,7 +194,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::PersonNotFound);
+            assert_eq!(*e, error::Error::DatabaseQueryError);
             return;
         }
     }
@@ -180,16 +202,22 @@ mod handler_tests {
     #[test]
     fn test_update_person() {
         // Given
-        let store = Store::new();
-        let person_id = "1".to_string();
-        let person = Person {
-            id: PersonID(person_id.clone()),
+        let a_person = Person {
+            id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         };
-        let expected_result = "Person updated".to_string();
+        let person_to_return = Some(Person {
+            id: PersonID("1".to_string()),
+            name: "Luisfer".to_string(),
+        });
+        let store = DummyStore::new_with_update_person(person_to_return, false);
+        let expected_result = Person {
+            id: PersonID("1".to_string()),
+            name: "Luisfer".to_string(),
+        };
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
-        let got = runtime.block_on(handler::update_person(person_id, person, store));
+        let got = runtime.block_on(handler::update_person(a_person, store));
         // Then
         assert_eq!(false, got.is_err());
 
@@ -206,21 +234,22 @@ mod handler_tests {
             Err(err) => panic!("unexpected value: {:?}", err),
         };
 
-        assert_eq!(got_result, expected_result);
+        let got_person: Person = serde_json::from_str(got_result.as_str()).unwrap();
+
+        assert_eq!(got_person, expected_result);
     }
 
     #[test]
     fn test_update_person_but_not_found() {
         // Given
-        let store = Store::new();
-        let person_id = "2000".to_string();
-        let person = Person {
-            id: PersonID(person_id.clone()),
-            name: "not found".to_string(),
+        let a_person = Person {
+            id: PersonID("1".to_string()),
+            name: "Luisfer".to_string(),
         };
+        let store = DummyStore::new_with_update_person(None, true);
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
-        let got = runtime.block_on(handler::update_person(person_id, person, store));
+        let got = runtime.block_on(handler::update_person(a_person, store));
         // Then
         assert_eq!(true, got.is_err());
 
@@ -230,7 +259,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::PersonNotFound);
+            assert_eq!(*e, error::Error::DatabaseQueryError);
             return;
         }
     }
@@ -244,5 +273,123 @@ mod handler_tests {
         }
 
         Ok(warp::reply::json(&people))
+    }
+
+    #[derive(Debug, Clone)]
+    struct DummyStore {
+        get_people_values: Option<Vec<Person>>,
+        get_people_error: Option<bool>,
+        get_person_value: Option<Person>,
+        get_person_error: Option<bool>,
+        add_person_value: Option<Person>,
+        add_person_error: Option<bool>,
+        update_person_value: Option<Person>,
+        update_person_error: Option<bool>,
+        delete_person_value: Option<bool>,
+        delete_person_error: Option<bool>,
+        add_pet_value: Option<Pet>,
+        add_pet_error: Option<bool>,
+    }
+
+    impl DummyStore {
+        fn new_with_get_people(people: Vec<Person>, is_error: bool) -> Self {
+            let mut dummy_store = DummyStore::default();
+            dummy_store.get_people_values = Some(people);
+            dummy_store.get_people_error = Some(is_error);
+
+            dummy_store
+        }
+        fn new_with_get_person(person: Option<Person>, is_error: bool) -> Self {
+            let mut dummy_store = DummyStore::default();
+            dummy_store.get_person_value = person;
+            dummy_store.get_person_error = Some(is_error);
+
+            dummy_store
+        }
+        fn new_with_add_person(person: Option<Person>, is_error: bool) -> Self {
+            let mut dummy_store = DummyStore::default();
+            dummy_store.add_person_value = person;
+            dummy_store.add_person_error = Some(is_error);
+
+            dummy_store
+        }
+        fn new_with_delete_person(is_error: bool) -> Self {
+            let mut dummy_store = DummyStore::default();
+            dummy_store.delete_person_error = Some(is_error);
+            dummy_store.delete_person_value = Some(is_error);
+
+            dummy_store
+        }
+        fn new_with_update_person(person: Option<Person>, is_error: bool) -> Self {
+            let mut dummy_store = DummyStore::default();
+            dummy_store.update_person_error = Some(is_error);
+            dummy_store.update_person_value = person;
+
+            dummy_store
+        }
+    }
+
+    impl Default for DummyStore {
+        fn default() -> DummyStore {
+            DummyStore {
+                get_people_values: Default::default(),
+                get_people_error: Default::default(),
+                get_person_value: Default::default(),
+                get_person_error: Default::default(),
+                add_person_value: Default::default(),
+                add_person_error: Default::default(),
+                update_person_value: Default::default(),
+                update_person_error: Default::default(),
+                delete_person_value: Default::default(),
+                delete_person_error: Default::default(),
+                add_pet_value: Default::default(),
+                add_pet_error: Default::default(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl storage::Storer for DummyStore {
+        async fn get_people(&self, _: Option<i32>, _: i32) -> Result<Vec<Person>, error::Error> {
+            match self.get_people_error.unwrap() {
+                false => Ok(self.get_people_values.clone().unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
+
+        async fn get_person(&self, _: PersonID) -> Result<Person, error::Error> {
+            match &self.get_person_error.unwrap() {
+                false => Ok(self.get_person_value.clone().unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
+
+        async fn add_person(&self, _: Person) -> Result<Person, error::Error> {
+            match &self.add_person_error.unwrap() {
+                false => Ok(self.add_person_value.clone().unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
+
+        async fn update_person(&self, _: Person) -> Result<Person, error::Error> {
+            match &self.update_person_error.unwrap() {
+                false => Ok(self.update_person_value.clone().unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
+
+        async fn delete_person(&self, _: PersonID) -> Result<bool, error::Error> {
+            match &self.delete_person_error.unwrap() {
+                false => Ok(self.delete_person_value.unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
+
+        async fn add_pet(&self, _: Pet) -> Result<Pet, error::Error> {
+            match &self.add_pet_error.unwrap() {
+                false => Ok(self.add_pet_value.clone().unwrap()),
+                true => Err(error::Error::DatabaseQueryError),
+            }
+        }
     }
 }
