@@ -43,13 +43,18 @@ you will see something like this
 ```sh
 ⏱️	Starting people api application...
 🪵	Initializing logger...
-🗿	Starting database connection...
-🛤️  Establishing API routes...
-👤	Creating people endpoint: GET /people
-👤	Creating get person endpoint: GET /people/{id}
-👤	Creating update person endpoint: PUT /people/{id}
-👤	Creating add person endpoint: POST /people
-🍏	Server has started at :3030
+LOG_SYSTEM: log4rs
+2023-09-16T22:35:14.460165+02:00 INFO people::application::app - 🪵	Using log4rs
+2023-09-16T22:35:14.460585+02:00 INFO people::application::app - 🗿	Starting database connection...
+2023-09-16T22:35:14.657319+02:00 INFO people::application::app - 🪜 	Establishing API routes...
+2023-09-16T22:35:14.657493+02:00 INFO people::application::app - 👤	Creating people endpoint: GET /people
+2023-09-16T22:35:14.657540+02:00 INFO people::application::app - 👤	Creating get person endpoint: GET /people/{id}
+2023-09-16T22:35:14.657566+02:00 INFO people::application::app - 👤	Creating update person endpoint: PUT /people
+2023-09-16T22:35:14.657593+02:00 INFO people::application::app - 👤	Creating add person endpoint: POST /people
+2023-09-16T22:35:14.657613+02:00 INFO people::application::app - 👤	Creating delete person endpoint: DELETE /people/{id}
+2023-09-16T22:35:14.657715+02:00 INFO people::application::app - 🍏	Starting server at :3030
+2023-09-16T22:35:14.657962+02:00 INFO warp::server - Server::run; addr=127.0.0.1:3030
+2023-09-16T22:35:14.658009+02:00 INFO warp::server - listening on http://127.0.0.1:3030
 ```
 
 once you finished just hit `ctrl + c`
@@ -68,10 +73,10 @@ trace
 
 ```sh
 curl -H "Content-Type: application/json" \
---data '{"id":"3", "name":"Esme"}' \
+--data '{"name":"Esme"}' \
 -X POST http://localhost:3030/people
 
-Person added
+{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9"}
 ```
 
 * Calling get people endpoint
@@ -83,16 +88,21 @@ curl -X GET http://localhost:3030/people
 
 with params
 
+limit: The index of the last item which has to be returned
+offset: The index of the first item which has to be returned
+
 ```sh
-curl -X GET 'http://localhost:3030/people?start=0&end=2'
-[{"id":"1","name":"Luis"},{"id":"2","name":"Fernando"}]
+curl -X GET 'http://localhost:3030/people?limit=10&offset=0'
+
+[{"id":"32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9","name":"Esme"},{"id":"d3bc8246-53da-4275-b833-5feb4489741d","name":"Jorge"},{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9","name":"Luis"}]
 ```
 
 * Calling get a person endpoint
 
 ```sh
-curl -X GET http://localhost:3030/people/1
-{"id":"1","name":"Luis"}
+curl -X GET http://localhost:3030/people/32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9
+
+{"id":"32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9","name":"Esme"}
 ```
 
 ```sh
@@ -104,17 +114,64 @@ Person not found
 
 ```sh
 curl -H "Content-Type: application/json" \
---data '{"id":"1", "name":"LuisFer"}' \
--X PUT http://localhost:3030/people/1
+--data '{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9", "name":"LuisFer"}' \
+-X PUT http://localhost:3030/people
 
-Person updated
+{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9","name":"LuisFer"}
 ```
 
 * Delete a person endpoint
 
 ```sh
 curl -H "Content-Type: application/json" \
--X DELETE http://localhost:3030/people/2
+-X DELETE http://localhost:3030/people/d3bc8246-53da-4275-b833-5feb4489741d
 
-Person deleted
+Person d3bc8246-53da-4275-b833-5feb4489741d deleted
+```
+
+## Migration
+
+I am using `sqlx-cli`, so let's install it first.
+
+```sh
+cargo install sqlx-cli
+```
+
+* add migration for people table
+
+```sh
+sqlx migrate add -r people_table
+
+Creating migrations/20230917172957_people_table.up.sql
+Creating migrations/20230917172957_people_table.down.sql
+```
+
+migration files were added in the `migrations` directory.
+
+```sh
+migrations/20230917172957_people_table.up.sql
+migrations/20230917172957_people_table.down.sql
+```
+
+* add migration for pets table
+
+```sh
+sqlx migrate add -r pets_table
+
+Creating migrations/20230917183452_pets_table.up.sql
+Creating migrations/20230917183452_pets_table.down.sql
+```
+
+* run migrations
+
+```sh
+sqlx migrate run --database-url postgresql://localhost:5432/pipol
+```
+
+* revert migrations
+
+Each revert will trigger the latest migration and try to run the `*.down.sql` script.
+
+```sh
+sqlx migrate revert --database-url "postgresql://localhost:5432/pipol"
 ```

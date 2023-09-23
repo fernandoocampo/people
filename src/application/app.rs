@@ -8,14 +8,14 @@ use warp::{http::Method, Filter};
 
 use crate::errors::error;
 use crate::people;
-use crate::storage::memory::Store;
+use crate::storage::db;
 
 pub async fn run() {
     println!("🪵\tInitializing logger...");
     initialize_logger();
 
     log::info!("🗿\tStarting database connection...");
-    let store = Store::new();
+    let store = new_db_storage().await;
     let store_filter = warp::any().map(move || store.clone());
 
     log::info!("🪜 \tEstablishing API routes...");
@@ -49,10 +49,9 @@ pub async fn run() {
         .and(store_filter.clone())
         .and_then(people::handler::get_person);
 
-    log::info!("👤\tCreating update person endpoint: PUT /people/{{id}}");
+    log::info!("👤\tCreating update person endpoint: PUT /people");
     let put_person = warp::put()
         .and(warp::path("people"))
-        .and(warp::path::param::<String>())
         .and(warp::path::end())
         .and(warp::body::json())
         .and(store_filter.clone())
@@ -176,4 +175,10 @@ fn initialize_tracing() {
 
 fn new_tracing_log_filter() -> String {
     env::var("RUST_LOG").unwrap_or_else(|_| "people=debug,warp=error".to_owned())
+}
+
+async fn new_db_storage() -> db::Store {
+    let db_url = "postgres://pipol:pipol@localhost:5432/pipol";
+
+    db::Store::new(db_url).await
 }
