@@ -1,4 +1,4 @@
-use crate::people::storage;
+use crate::people::{service, storage};
 use crate::types::{
     pagination,
     people::{NewPerson, Person, PersonID, SavePersonSuccess},
@@ -14,7 +14,7 @@ impl Reject for InvalidID {}
 
 pub async fn get_people(
     params: HashMap<String, String>,
-    store: impl storage::Storer,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl Reply, Rejection> {
     debug!("start querying people");
 
@@ -25,7 +25,10 @@ pub async fn get_people(
     }
 
     debug!(pagination = true);
-    let mut res: Vec<Person> = match store.get_people(pagination.limit, pagination.offset).await {
+    let mut res: Vec<Person> = match service
+        .get_people(pagination.limit, pagination.offset)
+        .await
+    {
         Ok(res) => res,
         Err(e) => return Err(warp::reject::custom(e)),
     };
@@ -37,9 +40,9 @@ pub async fn get_people(
 
 pub async fn get_person(
     id: String,
-    store: impl storage::Storer,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let res = match store.get_person(PersonID(id)).await {
+    let res = match service.get_person(PersonID(id)).await {
         Ok(res) => res,
         Err(e) => return Err(warp::reject::custom(e)),
     };
@@ -49,9 +52,9 @@ pub async fn get_person(
 
 pub async fn update_person(
     person: Person,
-    store: impl storage::Storer,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let res = match store.update_person(person).await {
+    let res = match service.update_person(person).await {
         Ok(res) => res,
         Err(e) => return Err(warp::reject::custom(e)),
     };
@@ -60,31 +63,31 @@ pub async fn update_person(
 }
 
 pub async fn add_person(
-    store: impl storage::Storer,
     new_person: NewPerson,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     debug!("start adding people {:?}", new_person);
 
-    let person = new_person.to_person();
-    debug!("new person with id {:?} is about to be saved", person);
+    match service.add_person(new_person.clone()).await {
+        Ok(person) => {
+            debug!("new person was saved {:?}", person);
 
-    if let Err(e) = store.add_person(person.clone()).await {
-        error!("adding person {:?}", person);
-        return Err(warp::reject::custom(e));
+            let result = SavePersonSuccess::new(person.id);
+
+            Ok(warp::reply::json(&result))
+        }
+        Err(e) => {
+            error!("adding person {:?}", new_person);
+            Err(warp::reject::custom(e))
+        }
     }
-
-    debug!("new person was saved {:?}", person);
-
-    let result = SavePersonSuccess::new(person.id);
-
-    Ok(warp::reply::json(&result))
 }
 
 pub async fn delete_person(
     id: String,
-    store: impl storage::Storer,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    if let Err(e) = store.delete_person(PersonID(id.clone())).await {
+    if let Err(e) = service.delete_person(PersonID(id.clone())).await {
         return Err(warp::reject::custom(e));
     }
 
@@ -95,14 +98,11 @@ pub async fn delete_person(
 }
 
 pub async fn add_pet(
-    store: impl storage::Storer,
     new_pet: NewPet,
+    service: service::Service<impl storage::Storer>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let pet = new_pet.to_pet();
-
-    if let Err(e) = store.add_pet(pet.clone()).await {
-        return Err(warp::reject::custom(e));
+    match service.add_pet(new_pet.clone()).await {
+        Ok(pet) => Ok(warp::reply::with_status(pet.id.to_string(), StatusCode::OK)),
+        Err(e) => Err(warp::reject::custom(e)),
     }
-
-    Ok(warp::reply::with_status(pet.id.to_string(), StatusCode::OK))
 }
