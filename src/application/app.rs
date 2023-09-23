@@ -16,7 +16,10 @@ pub async fn run() {
 
     log::info!("🗿\tStarting database connection...");
     let store = new_db_storage().await;
-    let store_filter = warp::any().map(move || store.clone());
+
+    log::info!("🔮\tInitializing people handler...");
+    let service = new_people_service(store).await;
+    let service_filter = warp::any().map(move || service.clone());
 
     log::info!("🪜 \tEstablishing API routes...");
 
@@ -25,12 +28,12 @@ pub async fn run() {
         .allow_header("content-type")
         .allow_methods(&[Method::PUT, Method::DELETE, Method::GET, Method::POST]);
 
-    log::info!("👤\tCreating people endpoint: GET /people");
+    log::info!("👥\tCreating people endpoint: GET /people");
     let get_people = warp::get()
         .and(warp::path("people"))
         .and(warp::path::end())
         .and(warp::query())
-        .and(store_filter.clone())
+        .and(service_filter.clone())
         .and_then(people::handler::get_people)
         .with(warp::trace(|info| {
             tracing::info_span!(
@@ -46,7 +49,7 @@ pub async fn run() {
         .and(warp::path("people"))
         .and(warp::path::param::<String>())
         .and(warp::path::end())
-        .and(store_filter.clone())
+        .and(service_filter.clone())
         .and_then(people::handler::get_person);
 
     log::info!("👤\tCreating update person endpoint: PUT /people");
@@ -54,15 +57,15 @@ pub async fn run() {
         .and(warp::path("people"))
         .and(warp::path::end())
         .and(warp::body::json())
-        .and(store_filter.clone())
+        .and(service_filter.clone())
         .and_then(people::handler::update_person);
 
     log::info!("👤\tCreating add person endpoint: POST /people");
     let post_person = warp::post()
         .and(warp::path("people"))
         .and(warp::path::end())
-        .and(store_filter.clone())
         .and(warp::body::json())
+        .and(service_filter.clone())
         .and_then(people::handler::add_person);
 
     log::info!("👤\tCreating delete person endpoint: DELETE /people/{{id}}");
@@ -70,7 +73,7 @@ pub async fn run() {
         .and(warp::path("people"))
         .and(warp::path::param::<String>())
         .and(warp::path::end())
-        .and(store_filter.clone())
+        .and(service_filter.clone())
         .and_then(people::handler::delete_person);
 
     // let wrap_log = warp::log::custom(|info| {
@@ -181,4 +184,8 @@ async fn new_db_storage() -> db::Store {
     let db_url = "postgres://pipol:pipol@localhost:5432/pipol";
 
     db::Store::new(db_url).await
+}
+
+async fn new_people_service<T: people::storage::Storer>(store: T) -> people::service::Service<T> {
+    people::service::Service::new(store)
 }

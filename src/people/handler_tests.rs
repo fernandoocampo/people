@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod handler_tests {
     use crate::errors::error;
-    use crate::people::handler;
-    use crate::people::storage;
+    use crate::people::{handler, service, storage};
     use crate::types::people::{NewPerson, Person, PersonID, SavePersonSuccess};
     use crate::types::pets::Pet;
     use async_trait::async_trait;
@@ -24,7 +23,8 @@ mod handler_tests {
             },
         ];
 
-        let store = DummyStore::new_with_get_people(people_store, false);
+        let person_service =
+            service::Service::new(DummyStore::new_with_get_people(people_store, false));
 
         let mut params: HashMap<String, String> = HashMap::new();
         params.insert(String::from("offset"), String::from("0"));
@@ -45,7 +45,7 @@ mod handler_tests {
 
         let runtime = Runtime::new().expect("Unable to create a runtime");
         // When
-        let got = runtime.block_on(handler::get_people(params, store));
+        let got = runtime.block_on(handler::get_people(params, person_service));
         // Then
         assert_eq!(got.is_err(), want.is_err());
         // assert_eq!(got.unwrap_err(), expected_result.unwrap_err());
@@ -73,7 +73,8 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luis".to_string(),
         };
-        let store = DummyStore::new_with_get_person(Some(person_store), false);
+        let person_service =
+            service::Service::new(DummyStore::new_with_get_person(Some(person_store), false));
         let person_id = "1".to_string();
         let expected_person = Person {
             id: PersonID("1".to_string()),
@@ -81,7 +82,7 @@ mod handler_tests {
         };
         let runtime = Runtime::new().expect("unable to create runtime to test get person");
         // When
-        let response = runtime.block_on(handler::get_person(person_id, store));
+        let response = runtime.block_on(handler::get_person(person_id, person_service));
         // Then
         let got_body_bytes = runtime
             .block_on(hyper::body::to_bytes(
@@ -95,11 +96,11 @@ mod handler_tests {
     #[test]
     fn test_get_not_found_person() {
         // Given
-        let store = DummyStore::new_with_get_person(None, true);
+        let person_service = service::Service::new(DummyStore::new_with_get_person(None, true));
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test get person");
         // When
-        let got = runtime.block_on(handler::get_person(person_id, store));
+        let got = runtime.block_on(handler::get_person(person_id, person_service));
         // Then
         assert_eq!(true, got.is_err());
 
@@ -123,10 +124,11 @@ mod handler_tests {
         };
         let new_person = NewPerson::new("esme".to_string());
         let mut expected_result = SavePersonSuccess { id: "".to_string() };
-        let store = DummyStore::new_with_add_person(Some(person), false);
+        let person_service =
+            service::Service::new(DummyStore::new_with_add_person(Some(person), false));
         let runtime = Runtime::new().expect("unable to create runtime to test create person");
         // When
-        let got = runtime.block_on(handler::add_person(store, new_person));
+        let got = runtime.block_on(handler::add_person(new_person, person_service));
         // Then
         assert_eq!(false, got.is_err());
 
@@ -152,12 +154,12 @@ mod handler_tests {
     #[test]
     fn test_delete_person() {
         // Given
-        let store = DummyStore::new_with_delete_person(false);
+        let person_service = service::Service::new(DummyStore::new_with_delete_person(false));
         let person_id = "2".to_string();
         let expected_result = "Person 2 deleted";
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
         // When
-        let got = runtime.block_on(handler::delete_person(person_id, store));
+        let got = runtime.block_on(handler::delete_person(person_id, person_service));
         // Then
         assert_eq!(false, got.is_err());
 
@@ -180,11 +182,11 @@ mod handler_tests {
     #[test]
     fn test_delete_person_but_not_found() {
         // Given
-        let store = DummyStore::new_with_delete_person(true);
+        let person_service = service::Service::new(DummyStore::new_with_delete_person(true));
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
         // When
-        let got = runtime.block_on(handler::delete_person(person_id, store));
+        let got = runtime.block_on(handler::delete_person(person_id, person_service));
         // Then
         assert_eq!(true, got.is_err());
 
@@ -210,14 +212,15 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         });
-        let store = DummyStore::new_with_update_person(person_to_return, false);
+        let person_service =
+            service::Service::new(DummyStore::new_with_update_person(person_to_return, false));
         let expected_result = Person {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         };
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
-        let got = runtime.block_on(handler::update_person(a_person, store));
+        let got = runtime.block_on(handler::update_person(a_person, person_service));
         // Then
         assert_eq!(false, got.is_err());
 
@@ -246,10 +249,10 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         };
-        let store = DummyStore::new_with_update_person(None, true);
+        let person_service = service::Service::new(DummyStore::new_with_update_person(None, true));
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
-        let got = runtime.block_on(handler::update_person(a_person, store));
+        let got = runtime.block_on(handler::update_person(a_person, person_service));
         // Then
         assert_eq!(true, got.is_err());
 
