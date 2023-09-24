@@ -1,5 +1,4 @@
 use std::{fmt, fmt::Display, fmt::Formatter, num::ParseIntError};
-use tracing::{event, Level};
 use warp::reject::Reject;
 use warp::{
     filters::{body::BodyDeserializeError, cors::CorsForbidden},
@@ -13,6 +12,12 @@ pub enum Error {
     MissingParameters,
     PersonNotFound,
     DatabaseQueryError,
+    GetPeopleError,
+    GetPersonError,
+    CreatePersonError,
+    UpdatePersonError,
+    DeletePersonError,
+    AddPetError,
 }
 
 impl Reject for Error {}
@@ -24,15 +29,45 @@ impl Display for Error {
             Error::MissingParameters => write!(f, "Missing parameter"),
             Error::PersonNotFound => write!(f, "Person not found"),
             Error::DatabaseQueryError => write!(f, "Cannot update, invalid data"),
+            Error::GetPeopleError => write!(f, "Unable to get people"),
+            Error::GetPersonError => write!(f, "Unable to get person"),
+            Error::CreatePersonError => write!(f, "Unable to create person"),
+            Error::UpdatePersonError => write!(f, "Unable to update person"),
+            Error::DeletePersonError => write!(f, "Unable to delete person"),
+            Error::AddPetError => write!(f, "Unable to add pet"),
         }
     }
 }
 
 pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
-    if let Some(Error::DatabaseQueryError) = r.find() {
-        event!(Level::ERROR, "Database query error");
+    if let Some(Error::GetPeopleError) = r.find() {
         Ok(warp::reply::with_status(
-            Error::DatabaseQueryError.to_string(),
+            "Cannot get people".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::GetPersonError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot get person".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::CreatePersonError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot create person".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::UpdatePersonError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot update person".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::DeletePersonError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot delete person".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::AddPetError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot add pet".to_string(),
             StatusCode::UNPROCESSABLE_ENTITY,
         ))
     } else if let Some(error) = r.find::<Error>() {

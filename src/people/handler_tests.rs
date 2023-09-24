@@ -110,7 +110,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::DatabaseQueryError);
+            assert_eq!(*e, error::Error::GetPersonError);
             return;
         }
     }
@@ -196,7 +196,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::DatabaseQueryError);
+            assert_eq!(*e, error::Error::DeletePersonError);
             return;
         }
     }
@@ -262,7 +262,7 @@ mod handler_tests {
         };
 
         if let Some(e) = got_error.find::<error::Error>() {
-            assert_eq!(*e, error::Error::DatabaseQueryError);
+            assert_eq!(*e, error::Error::UpdatePersonError);
             return;
         }
     }
@@ -356,42 +356,42 @@ mod handler_tests {
         async fn get_people(&self, _: Option<i32>, _: i32) -> Result<Vec<Person>, error::Error> {
             match self.get_people_error.unwrap() {
                 false => Ok(self.get_people_values.clone().unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::GetPeopleError),
             }
         }
 
         async fn get_person(&self, _: PersonID) -> Result<Person, error::Error> {
             match &self.get_person_error.unwrap() {
                 false => Ok(self.get_person_value.clone().unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::GetPersonError),
             }
         }
 
         async fn add_person(&self, _: Person) -> Result<Person, error::Error> {
             match &self.add_person_error.unwrap() {
                 false => Ok(self.add_person_value.clone().unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::CreatePersonError),
             }
         }
 
         async fn update_person(&self, _: Person) -> Result<Person, error::Error> {
             match &self.update_person_error.unwrap() {
                 false => Ok(self.update_person_value.clone().unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::UpdatePersonError),
             }
         }
 
         async fn delete_person(&self, _: PersonID) -> Result<bool, error::Error> {
             match &self.delete_person_error.unwrap() {
                 false => Ok(self.delete_person_value.unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::DeletePersonError),
             }
         }
 
         async fn add_pet(&self, _: Pet) -> Result<Pet, error::Error> {
             match &self.add_pet_error.unwrap() {
                 false => Ok(self.add_pet_value.clone().unwrap()),
-                true => Err(error::Error::DatabaseQueryError),
+                true => Err(error::Error::AddPetError),
             }
         }
     }

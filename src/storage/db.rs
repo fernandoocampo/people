@@ -67,6 +67,9 @@ impl storage::Storer for Store {
             .await
         {
             Ok(person) => Ok(person),
+            Err(sqlx::Error::RowNotFound) => {
+                Ok(Person::new(PersonID(String::from("")), String::from("")))
+            }
             Err(e) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", e);
                 Err(Error::DatabaseQueryError)
