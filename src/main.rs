@@ -1,6 +1,7 @@
 #![warn(clippy::all)]
 
 pub mod application;
+pub mod censors;
 pub mod errors;
 pub mod people;
 pub mod storage;

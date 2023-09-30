@@ -1,4 +1,4 @@
-use crate::people::{service, storage};
+use crate::people::{censor, service, storage};
 use crate::types::{
     pagination,
     people::{NewPerson, Person, PersonID, SavePersonSuccess},
@@ -14,7 +14,7 @@ impl Reject for InvalidID {}
 
 pub async fn get_people(
     params: HashMap<String, String>,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl Reply, Rejection> {
     debug!("start querying people");
 
@@ -40,7 +40,7 @@ pub async fn get_people(
 
 pub async fn get_person(
     id: String,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let res = match service.get_person(PersonID(id)).await {
         Ok(res) => res,
@@ -52,7 +52,7 @@ pub async fn get_person(
 
 pub async fn update_person(
     person: Person,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let res = match service.update_person(person).await {
         Ok(res) => res,
@@ -64,7 +64,7 @@ pub async fn update_person(
 
 pub async fn add_person(
     new_person: NewPerson,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     debug!("start adding people {:?}", new_person);
 
@@ -85,7 +85,7 @@ pub async fn add_person(
 
 pub async fn delete_person(
     id: String,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     if let Err(e) = service.delete_person(PersonID(id.clone())).await {
         return Err(warp::reject::custom(e));
@@ -99,7 +99,7 @@ pub async fn delete_person(
 
 pub async fn add_pet(
     new_pet: NewPet,
-    service: service::Service<impl storage::Storer>,
+    service: service::Service<impl storage::Storer, impl censor::Censorious>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     match service.add_pet(new_pet.clone()).await {
         Ok(pet) => Ok(warp::reply::with_status(pet.id.to_string(), StatusCode::OK)),

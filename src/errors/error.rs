@@ -18,6 +18,7 @@ pub enum Error {
     UpdatePersonError,
     DeletePersonError,
     AddPetError,
+    ValidateBadWordsError,
 }
 
 impl Reject for Error {}
@@ -35,6 +36,7 @@ impl Display for Error {
             Error::UpdatePersonError => write!(f, "Unable to update person"),
             Error::DeletePersonError => write!(f, "Unable to delete person"),
             Error::AddPetError => write!(f, "Unable to add pet"),
+            Error::ValidateBadWordsError => write!(f, "cannot validate bad words"),
         }
     }
 }
@@ -84,6 +86,11 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
         Ok(warp::reply::with_status(
             error.to_string(),
             StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::ValidateBadWordsError) = r.find() {
+        Ok(warp::reply::with_status(
+            "cannot validate bad words".to_string(),
+            StatusCode::INTERNAL_SERVER_ERROR,
         ))
     } else {
         Ok(warp::reply::with_status(

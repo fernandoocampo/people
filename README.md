@@ -43,24 +43,24 @@ you will see something like this
 ```sh
 ➜  make run
 RUST_LOG=debug LOG_SYSTEM=log4rs cargo run
-   Compiling people v0.1.0 (/Users/Fernando_Ocampo/Workspaces/rustws/people)
-    Finished dev [unoptimized + debuginfo] target(s) in 10.62s
+    Finished dev [unoptimized + debuginfo] target(s) in 0.22s
      Running `target/debug/people`
 ⏱️	Starting people api application...
 🪵	Initializing logger...
 LOG_SYSTEM: log4rs
-2023-09-23T17:40:05.579168+02:00 INFO people::application::app - 🪵	Using log4rs
-2023-09-23T17:40:05.579422+02:00 INFO people::application::app - 🗿	Starting database connection...
-2023-09-23T17:40:05.681087+02:00 INFO people::application::app - 🔮	Initializing people handler...
-2023-09-23T17:40:05.681126+02:00 INFO people::application::app - 🪜 	Establishing API routes...
-2023-09-23T17:40:05.681239+02:00 INFO people::application::app - 👥	Creating people endpoint: GET /people
-2023-09-23T17:40:05.681303+02:00 INFO people::application::app - 👤	Creating get person endpoint: GET /people/{id}
-2023-09-23T17:40:05.681315+02:00 INFO people::application::app - 👤	Creating update person endpoint: PUT /people
-2023-09-23T17:40:05.681371+02:00 INFO people::application::app - 👤	Creating add person endpoint: POST /people
-2023-09-23T17:40:05.681380+02:00 INFO people::application::app - 👤	Creating delete person endpoint: DELETE /people/{id}
-2023-09-23T17:40:05.681553+02:00 INFO people::application::app - 🍏	Starting server at :3030
-2023-09-23T17:40:05.681809+02:00 INFO warp::server - Server::run; addr=127.0.0.1:3030
-2023-09-23T17:40:05.681837+02:00 INFO warp::server - listening on http://127.0.0.1:3030
+2023-09-30T19:58:16.219960+02:00 INFO people::application::app - 🪵	Using log4rs
+2023-09-30T19:58:16.220487+02:00 INFO people::application::app - 🗿	Starting database connection...
+2023-09-30T19:58:16.320768+02:00 INFO people::application::app - 🔎	Initializing censorious mechanism...
+2023-09-30T19:58:16.321201+02:00 INFO people::application::app - 🔮	Initializing people handler...
+2023-09-30T19:58:16.321223+02:00 INFO people::application::app - 🪜 	Establishing API routes...
+2023-09-30T19:58:16.321315+02:00 INFO people::application::app - 👥	Creating people endpoint: GET /people
+2023-09-30T19:58:16.321379+02:00 INFO people::application::app - 👤	Creating get person endpoint: GET /people/{id}
+2023-09-30T19:58:16.321392+02:00 INFO people::application::app - 👤	Creating update person endpoint: PUT /people
+2023-09-30T19:58:16.321406+02:00 INFO people::application::app - 👤	Creating add person endpoint: POST /people
+2023-09-30T19:58:16.321416+02:00 INFO people::application::app - 👤	Creating delete person endpoint: DELETE /people/{id}
+2023-09-30T19:58:16.321532+02:00 INFO people::application::app - 🍏	Starting server at :3030
+2023-09-30T19:58:16.321824+02:00 INFO warp::server - Server::run; addr=127.0.0.1:3030
+2023-09-30T19:58:16.321910+02:00 INFO warp::server - listening on http://127.0.0.1:3030
 ```
 
 once you finished just hit `ctrl + c`

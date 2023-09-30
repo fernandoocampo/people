@@ -1,9 +1,8 @@
 use crate::errors::error;
-use crate::people::{handler, service, storage};
-use crate::types::people::{NewPerson, Person, PersonID, SavePersonSuccess};
+use crate::people::{censor, service, storage};
+use crate::types::people::{NewPerson, Person, PersonID};
 use crate::types::pets::Pet;
 use async_trait::async_trait;
-use std::collections::HashMap;
 use tokio::runtime::Runtime;
 
 #[test]
@@ -31,8 +30,10 @@ fn test_get_people() {
         },
     ];
 
-    let person_service =
-        service::Service::new(DummyStore::new_with_get_people(people_store, false));
+    let a_store = DummyStore::new_with_get_people(people_store, false);
+    let a_censor = DummyCensor::new("".to_string(), false);
+
+    let person_service = service::Service::new(a_store, a_censor);
 
     let limit = Some(10);
     let offset = 0;
@@ -56,8 +57,10 @@ fn test_get_person() {
         id: PersonID("1".to_string()),
         name: "Luis".to_string(),
     };
-    let person_service =
-        service::Service::new(DummyStore::new_with_get_person(Some(person_store), false));
+
+    let a_store = DummyStore::new_with_get_person(Some(person_store), false);
+    let a_censor = DummyCensor::new("".to_string(), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let person_id = PersonID("1".to_string());
     let want = Person {
         id: PersonID("1".to_string()),
@@ -76,7 +79,10 @@ fn test_get_person() {
 #[test]
 fn test_get_not_found_person() {
     // Given
-    let person_service = service::Service::new(DummyStore::new_with_get_person(None, true));
+    let person_service = service::Service::new(
+        DummyStore::new_with_get_person(None, true),
+        DummyCensor::new("".to_string(), false),
+    );
     let person_id = PersonID("2000".to_string());
     let runtime = Runtime::new().expect("unable to create runtime to test get person");
     // When
@@ -100,8 +106,9 @@ fn test_create_person() {
         name: "esme".to_string(),
     };
     let new_person = NewPerson::new("esme".to_string());
-    let person_service =
-        service::Service::new(DummyStore::new_with_add_person(Some(person), false));
+    let a_censor = DummyCensor::new("esme".to_string(), false);
+    let a_store = DummyStore::new_with_add_person(Some(person), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let runtime = Runtime::new().expect("unable to create runtime to test create person");
     // When
     let got = runtime.block_on(person_service.add_person(new_person));
@@ -118,7 +125,8 @@ fn test_create_person() {
 fn test_delete_person() {
     // Given
     let a_store = DummyStore::new_with_delete_person(true, false);
-    let person_service = service::Service::new(a_store);
+    let a_censor = DummyCensor::new("".to_string(), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let person_id = PersonID("2".to_string());
     let want = true;
     let runtime = Runtime::new().expect("unable to create runtime to test delete person");
@@ -135,7 +143,8 @@ fn test_delete_person() {
 fn test_delete_person_but_not_found() {
     // Given
     let a_store = DummyStore::new_with_delete_person(false, true);
-    let person_service = service::Service::new(a_store);
+    let a_censor = DummyCensor::new("".to_string(), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let person_id = PersonID("2000".to_string());
     let runtime = Runtime::new().expect("unable to create runtime to test delete person");
     // When
@@ -159,7 +168,8 @@ fn test_update_person() {
         name: "Luisfer".to_string(),
     });
     let a_store = DummyStore::new_with_update_person(person_to_return, false);
-    let person_service = service::Service::new(a_store);
+    let a_censor = DummyCensor::new("".to_string(), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let want = Person {
         id: PersonID("1".to_string()),
         name: "Luisfer".to_string(),
@@ -182,7 +192,8 @@ fn test_update_person_but_not_found() {
         name: "Luisfer".to_string(),
     };
     let a_store = DummyStore::new_with_update_person(None, true);
-    let person_service = service::Service::new(a_store);
+    let a_censor = DummyCensor::new("".to_string(), false);
+    let person_service = service::Service::new(a_store, a_censor);
     let runtime = Runtime::new().expect("unable to create runtime to test update person");
     // When
     let got = runtime.block_on(person_service.update_person(a_person));
@@ -190,6 +201,36 @@ fn test_update_person_but_not_found() {
     match got {
         Ok(person) => panic!("unexpected result {:?}", person),
         Err(err) => assert_eq!(err, error::Error::UpdatePersonError),
+    }
+}
+
+#[derive(Debug, Clone)]
+struct DummyCensor {
+    response: String,
+    is_error: bool,
+}
+
+impl DummyCensor {
+    fn new(response: String, is_error: bool) -> Self {
+        DummyCensor {
+            response: response,
+            is_error: is_error,
+        }
+    }
+}
+
+#[async_trait]
+impl censor::Censorious for DummyCensor {
+    async fn censor(&self, word: String) -> Result<String, error::Error> {
+        match self.is_error {
+            true => Err(error::Error::ValidateBadWordsError),
+            false => {
+                if self.response.is_empty() {
+                    return Ok(word.clone());
+                }
+                return Ok(self.response.clone());
+            }
+        }
     }
 }
 

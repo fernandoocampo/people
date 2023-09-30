@@ -26,3 +26,14 @@ start-services: ## start database
 stop-services: ## stop database
 	docker compose down --volumes
 
+.PHONY: add-person
+add-person: ## add a person, name will be $(date)
+	curl -H "Content-Type: application/json" \
+	--data '{"name":"Esme"}' \
+	-X POST http://localhost:3030/people
+
+.PHONY: get-people
+get-people: ## get the existing people in the service
+	curl -X GET http://localhost:3030/people
+
+

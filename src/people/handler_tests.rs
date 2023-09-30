@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod handler_tests {
     use crate::errors::error;
-    use crate::people::{handler, service, storage};
+    use crate::people::{censor, handler, service, storage};
     use crate::types::people::{NewPerson, Person, PersonID, SavePersonSuccess};
     use crate::types::pets::Pet;
     use async_trait::async_trait;
@@ -23,8 +23,9 @@ mod handler_tests {
             },
         ];
 
-        let person_service =
-            service::Service::new(DummyStore::new_with_get_people(people_store, false));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_get_people(people_store, false);
+        let person_service = service::Service::new(a_store, a_censor);
 
         let mut params: HashMap<String, String> = HashMap::new();
         params.insert(String::from("offset"), String::from("0"));
@@ -73,8 +74,11 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luis".to_string(),
         };
-        let person_service =
-            service::Service::new(DummyStore::new_with_get_person(Some(person_store), false));
+
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_get_person(Some(person_store), false);
+
+        let person_service = service::Service::new(a_store, a_censor);
         let person_id = "1".to_string();
         let expected_person = Person {
             id: PersonID("1".to_string()),
@@ -96,7 +100,10 @@ mod handler_tests {
     #[test]
     fn test_get_not_found_person() {
         // Given
-        let person_service = service::Service::new(DummyStore::new_with_get_person(None, true));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_get_person(None, true);
+
+        let person_service = service::Service::new(a_store, a_censor);
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test get person");
         // When
@@ -124,8 +131,9 @@ mod handler_tests {
         };
         let new_person = NewPerson::new("esme".to_string());
         let mut expected_result = SavePersonSuccess { id: "".to_string() };
-        let person_service =
-            service::Service::new(DummyStore::new_with_add_person(Some(person), false));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_add_person(Some(person), false);
+        let person_service = service::Service::new(a_store, a_censor);
         let runtime = Runtime::new().expect("unable to create runtime to test create person");
         // When
         let got = runtime.block_on(handler::add_person(new_person, person_service));
@@ -154,7 +162,9 @@ mod handler_tests {
     #[test]
     fn test_delete_person() {
         // Given
-        let person_service = service::Service::new(DummyStore::new_with_delete_person(false));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_delete_person(false);
+        let person_service = service::Service::new(a_store, a_censor);
         let person_id = "2".to_string();
         let expected_result = "Person 2 deleted";
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
@@ -182,7 +192,9 @@ mod handler_tests {
     #[test]
     fn test_delete_person_but_not_found() {
         // Given
-        let person_service = service::Service::new(DummyStore::new_with_delete_person(true));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_delete_person(true);
+        let person_service = service::Service::new(a_store, a_censor);
         let person_id = "2000".to_string();
         let runtime = Runtime::new().expect("unable to create runtime to test delete person");
         // When
@@ -212,8 +224,9 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         });
-        let person_service =
-            service::Service::new(DummyStore::new_with_update_person(person_to_return, false));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_update_person(person_to_return, false);
+        let person_service = service::Service::new(a_store, a_censor);
         let expected_result = Person {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
@@ -249,7 +262,9 @@ mod handler_tests {
             id: PersonID("1".to_string()),
             name: "Luisfer".to_string(),
         };
-        let person_service = service::Service::new(DummyStore::new_with_update_person(None, true));
+        let a_censor = DummyCensor::new("".to_string(), false);
+        let a_store = DummyStore::new_with_update_person(None, true);
+        let person_service = service::Service::new(a_store, a_censor);
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
         let got = runtime.block_on(handler::update_person(a_person, person_service));
@@ -392,6 +407,36 @@ mod handler_tests {
             match &self.add_pet_error.unwrap() {
                 false => Ok(self.add_pet_value.clone().unwrap()),
                 true => Err(error::Error::AddPetError),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    struct DummyCensor {
+        response: String,
+        is_error: bool,
+    }
+
+    impl DummyCensor {
+        fn new(response: String, is_error: bool) -> Self {
+            DummyCensor {
+                response: response,
+                is_error: is_error,
+            }
+        }
+    }
+
+    #[async_trait]
+    impl censor::Censorious for DummyCensor {
+        async fn censor(&self, word: String) -> Result<String, error::Error> {
+            match self.is_error {
+                true => Err(error::Error::ValidateBadWordsError),
+                false => {
+                    if self.response.is_empty() {
+                        return Ok(word.clone());
+                    }
+                    return Ok(self.response.clone());
+                }
             }
         }
     }

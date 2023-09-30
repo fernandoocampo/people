@@ -2,10 +2,12 @@ use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Logger, Root};
 use log4rs::encode::json::JsonEncoder;
+use reqwest::Client;
 use std::env;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::{http::Method, Filter};
 
+use crate::censors::censor;
 use crate::errors::error;
 use crate::people;
 use crate::storage::db;
@@ -17,8 +19,11 @@ pub async fn run() {
     log::info!("🗿\tStarting database connection...");
     let store = new_db_storage().await;
 
+    log::info!("🔎\tInitializing censorious mechanism...");
+    let censorious = new_censorious().await;
+
     log::info!("🔮\tInitializing people handler...");
-    let service = new_people_service(store).await;
+    let service = new_people_service(store, censorious).await;
     let service_filter = warp::any().map(move || service.clone());
 
     log::info!("🪜 \tEstablishing API routes...");
@@ -186,6 +191,17 @@ async fn new_db_storage() -> db::Store {
     db::Store::new(db_url).await
 }
 
-async fn new_people_service<T: people::storage::Storer>(store: T) -> people::service::Service<T> {
-    people::service::Service::new(store)
+async fn new_censorious() -> censor::Censor {
+    let api_key = env::var("CENSOR_API_KEY").expect("$CENSOR_API_KEY is not set");
+    let api_url = "https://api.apilayer.com/bad_words?censor_character=*";
+    let new_client = Client::new();
+
+    censor::Censor::new(new_client, api_key.as_str(), api_url).await
+}
+
+async fn new_people_service<T: people::storage::Storer, C: people::censor::Censorious>(
+    store: T,
+    censorious: C,
+) -> people::service::Service<T, C> {
+    people::service::Service::new(store, censorious)
 }

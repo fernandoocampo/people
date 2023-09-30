@@ -1,4 +1,5 @@
 use crate::errors::error::Error;
+use crate::people::censor;
 use crate::people::storage;
 use crate::types::{
     people::{NewPerson, Person, PersonID},
@@ -8,13 +9,17 @@ use log::error;
 use tracing::debug;
 
 #[derive(Debug, Clone)]
-pub struct Service<T: storage::Storer> {
+pub struct Service<T: storage::Storer, C: censor::Censorious> {
     store: T,
+    censorious: C,
 }
 
-impl<T: storage::Storer> Service<T> {
-    pub fn new(a_store: T) -> Self {
-        Service { store: a_store }
+impl<T: storage::Storer, C: censor::Censorious> Service<T, C> {
+    pub fn new(a_store: T, a_censorious: C) -> Self {
+        Service {
+            store: a_store,
+            censorious: a_censorious,
+        }
     }
 
     pub async fn get_people(&self, limit: Option<i32>, offset: i32) -> Result<Vec<Person>, Error> {
@@ -59,7 +64,15 @@ impl<T: storage::Storer> Service<T> {
     pub async fn add_person(&self, new_person: NewPerson) -> Result<Person, Error> {
         debug!("start adding people {:?}", new_person);
 
-        let person = new_person.to_person();
+        debug!("checking bad words");
+
+        let new_name = match self.censorious.censor(new_person.name.clone()).await {
+            Ok(res) => res,
+            Err(err) => return Err(err),
+        };
+
+        let mut person = new_person.to_person();
+        person.name = new_name;
         debug!("new person with id {:?} is about to be saved", person);
 
         match self.store.add_person(person.clone()).await {
