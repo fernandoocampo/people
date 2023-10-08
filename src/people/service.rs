@@ -66,13 +66,13 @@ impl<T: storage::Storer, C: censor::Censorious> Service<T, C> {
 
         debug!("checking bad words");
 
-        let new_name = match self.censorious.censor(new_person.name.clone()).await {
+        let new_name = match self.censorious.censor(new_person.first_name.clone()).await {
             Ok(res) => res,
             Err(err) => return Err(err),
         };
 
         let mut person = new_person.to_person();
-        person.name = new_name;
+        person.first_name = new_name;
         debug!("new person with id {:?} is about to be saved", person);
 
         match self.store.add_person(person.clone()).await {

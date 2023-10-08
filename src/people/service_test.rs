@@ -11,22 +11,26 @@ fn test_get_people() {
     let people_store = vec![
         Person {
             id: PersonID("1".to_string()),
-            name: "Luis".to_string(),
+            first_name: "Luis".to_string(),
+            last_name: "Luis".to_string(),
         },
         Person {
             id: PersonID("2".to_string()),
-            name: "Fernando".to_string(),
+            first_name: "Fernando".to_string(),
+            last_name: "Fernando".to_string(),
         },
     ];
 
     let want: Vec<Person> = vec![
         Person {
             id: PersonID("1".to_string()),
-            name: "Luis".to_string(),
+            first_name: "Luis".to_string(),
+            last_name: "Luis".to_string(),
         },
         Person {
             id: PersonID("2".to_string()),
-            name: "Fernando".to_string(),
+            first_name: "Fernando".to_string(),
+            last_name: "Fernando".to_string(),
         },
     ];
 
@@ -55,7 +59,8 @@ fn test_get_person() {
     // Given
     let person_store = Person {
         id: PersonID("1".to_string()),
-        name: "Luis".to_string(),
+        first_name: "Luis".to_string(),
+        last_name: "Luis".to_string(),
     };
 
     let a_store = DummyStore::new_with_get_person(Some(person_store), false);
@@ -64,7 +69,8 @@ fn test_get_person() {
     let person_id = PersonID("1".to_string());
     let want = Person {
         id: PersonID("1".to_string()),
-        name: "Luis".to_string(),
+        first_name: "Luis".to_string(),
+        last_name: "Luis".to_string(),
     };
     let runtime = Runtime::new().expect("unable to create runtime to test get person");
     // When
@@ -99,13 +105,15 @@ fn test_create_person() {
     // Given
     let person = Person {
         id: PersonID("3".to_string()),
-        name: "esme".to_string(),
+        first_name: "esme".to_string(),
+        last_name: "esme".to_string(),
     };
     let want = Person {
         id: PersonID("3".to_string()),
-        name: "esme".to_string(),
+        first_name: "esme".to_string(),
+        last_name: "esme".to_string(),
     };
-    let new_person = NewPerson::new("esme".to_string());
+    let new_person = NewPerson::new("esme".to_string(), "esme".to_string());
     let a_censor = DummyCensor::new("esme".to_string(), false);
     let a_store = DummyStore::new_with_add_person(Some(person), false);
     let person_service = service::Service::new(a_store, a_censor);
@@ -161,18 +169,21 @@ fn test_update_person() {
     // Given
     let a_person = Person {
         id: PersonID("1".to_string()),
-        name: "Luisfer".to_string(),
+        first_name: "Luisfer".to_string(),
+        last_name: "Luisfer".to_string(),
     };
     let person_to_return = Some(Person {
         id: PersonID("1".to_string()),
-        name: "Luisfer".to_string(),
+        first_name: "Luisfer".to_string(),
+        last_name: "Luisfer".to_string(),
     });
     let a_store = DummyStore::new_with_update_person(person_to_return, false);
     let a_censor = DummyCensor::new("".to_string(), false);
     let person_service = service::Service::new(a_store, a_censor);
     let want = Person {
         id: PersonID("1".to_string()),
-        name: "Luisfer".to_string(),
+        first_name: "Luisfer".to_string(),
+        last_name: "Luisfer".to_string(),
     };
     let runtime = Runtime::new().expect("unable to create runtime to test update person");
     // When
@@ -189,7 +200,8 @@ fn test_update_person_but_not_found() {
     // Given
     let a_person = Person {
         id: PersonID("1".to_string()),
-        name: "Luisfer".to_string(),
+        first_name: "Luisfer".to_string(),
+        last_name: "Luisfer".to_string(),
     };
     let a_store = DummyStore::new_with_update_person(None, true);
     let a_censor = DummyCensor::new("".to_string(), false);
@@ -222,6 +234,17 @@ impl DummyCensor {
 #[async_trait]
 impl censor::Censorious for DummyCensor {
     async fn censor(&self, word: String) -> Result<String, error::Error> {
+        match self.is_error {
+            true => Err(error::Error::ValidateBadWordsError),
+            false => {
+                if self.response.is_empty() {
+                    return Ok(word.clone());
+                }
+                return Ok(self.response.clone());
+            }
+        }
+    }
+    async fn censor_with_backoff(&self, word: String) -> Result<String, error::Error> {
         match self.is_error {
             true => Err(error::Error::ValidateBadWordsError),
             false => {

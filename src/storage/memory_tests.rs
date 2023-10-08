@@ -11,11 +11,13 @@ mod memory_tests {
         let expected_result: Vec<Person> = vec![
             Person {
                 id: PersonID("1".to_string()),
-                name: "Luis".to_string(),
+                first_name: "Luis".to_string(),
+                last_name: "Luis".to_string(),
             },
             Person {
                 id: PersonID("2".to_string()),
-                name: "Fernando".to_string(),
+                first_name: "Fernando".to_string(),
+                last_name: "Fernando".to_string(),
             },
         ];
         let runtime = Runtime::new().expect("Unable to create a runtime");

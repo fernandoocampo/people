@@ -8,12 +8,14 @@ use std::{
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Person {
     pub id: PersonID,
-    pub name: String,
+    pub first_name: String,
+    pub last_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NewPerson {
-    pub name: String,
+    pub first_name: String,
+    pub last_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -25,20 +27,28 @@ pub struct SavePersonSuccess {
 pub struct PersonID(pub String);
 
 impl Person {
-    pub fn new(id: PersonID, name: String) -> Self {
-        Person { id, name }
+    pub fn new(id: PersonID, first_name: String, last_name: String) -> Self {
+        Person {
+            id,
+            first_name,
+            last_name,
+        }
     }
 }
 
 impl NewPerson {
-    pub fn new(name: String) -> Self {
-        NewPerson { name }
+    pub fn new(first_name: String, last_name: String) -> Self {
+        NewPerson {
+            first_name,
+            last_name,
+        }
     }
 
     pub fn to_person(&self) -> Person {
         Person {
             id: PersonID(uuid::Uuid::new_v4().to_string()),
-            name: self.name.clone(),
+            first_name: self.first_name.clone(),
+            last_name: self.last_name.clone(),
         }
     }
 }

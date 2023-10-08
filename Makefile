@@ -14,6 +14,10 @@ test: ## run unit tests using cargo.
 lint-fmt: ## checkc that code format is ok.
 	cargo fmt --all --check
 
+.PHONY: run-migration
+run-migration: ## run pending migrations
+	sqlx migrate run --database-url postgres://pipol:pipol@localhost:5432/pipol
+
 .PHONY: lint-clippy
 lint-clippy: ## apply linter clippy.
 	cargo clippy  --future-incompat-report -- -D warnings
@@ -29,7 +33,7 @@ stop-services: ## stop database
 .PHONY: add-person
 add-person: ## add a person, name will be $(date)
 	curl -H "Content-Type: application/json" \
-	--data '{"name":"Esme"}' \
+	--data '{"first_name":"Esme", "last_name":"Esme"}' \
 	-X POST http://localhost:3030/people
 
 .PHONY: get-people

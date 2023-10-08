@@ -40,7 +40,8 @@ impl storage::Storer for Store {
             .bind(offset)
             .map(|row: PgRow| Person {
                 id: PersonID(row.get("id")),
-                name: row.get("name"),
+                first_name: row.get("first_name"),
+                last_name: row.get("last_name"),
             })
             .fetch_all(&self.connection)
             .await
@@ -61,15 +62,18 @@ impl storage::Storer for Store {
             .bind(person_id.to_string())
             .map(|row: PgRow| Person {
                 id: PersonID(row.get("id")),
-                name: row.get("name"),
+                first_name: row.get("first_name"),
+                last_name: row.get("last_name"),
             })
             .fetch_one(&self.connection)
             .await
         {
             Ok(person) => Ok(person),
-            Err(sqlx::Error::RowNotFound) => {
-                Ok(Person::new(PersonID(String::from("")), String::from("")))
-            }
+            Err(sqlx::Error::RowNotFound) => Ok(Person::new(
+                PersonID(String::from("")),
+                String::from(""),
+                String::from(""),
+            )),
             Err(e) => {
                 tracing::event!(tracing::Level::ERROR, "{:?}", e);
                 Err(Error::DatabaseQueryError)
@@ -80,12 +84,14 @@ impl storage::Storer for Store {
     async fn add_person(&self, new_person: Person) -> Result<Person, Error> {
         debug!("adding person to postgres database: {:?}", new_person);
 
-        match sqlx::query("INSERT INTO people (ID, NAME) VALUES ($1, $2) RETURNING ID, NAME")
+        match sqlx::query("INSERT INTO people (ID, FIRST_NAME, LAST_NAME) VALUES ($1, $2, $3) RETURNING ID, FIRST_NAME, LAST_NAME")
             .bind(new_person.id.to_string())
-            .bind(new_person.name)
+            .bind(new_person.first_name)
+            .bind(new_person.last_name)
             .map(|row: PgRow| Person {
                 id: PersonID(row.get("id")),
-                name: row.get("name"),
+                first_name: row.get("first_name"),
+                last_name: row.get("last_name"),
             })
             .fetch_one(&self.connection)
             .await
@@ -102,12 +108,14 @@ impl storage::Storer for Store {
     }
 
     async fn update_person(&self, person: Person) -> Result<Person, Error> {
-        match sqlx::query("UPDATE people SET NAME=$1 WHERE ID=$2 RETURNING ID, NAME")
-            .bind(person.name)
+        match sqlx::query("UPDATE people SET FIRST_NAME=$1, LAST_NAME=$2 WHERE ID=$3 RETURNING ID, FIRST_NAME, LAST_NAME")
+            .bind(person.first_name)
+            .bind(person.last_name)
             .bind(person.id.to_string())
             .map(|row: PgRow| Person {
                 id: PersonID(row.get("id")),
-                name: row.get("name"),
+                first_name: row.get("first_name"),
+                last_name: row.get("last_name"),
             })
             .fetch_one(&self.connection)
             .await

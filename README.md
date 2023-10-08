@@ -89,7 +89,7 @@ curl -H "Content-Type: application/json" \
 
 ```sh
 curl -X GET http://localhost:3030/people
-[{"id":"1","name":"Luis"},{"id":"2","name":"Fernando"}]
+[{"id":"27c6bdd9-67d6-4503-884d-d75aba152f44","first_name":"Esme","last_name":"Esme"},{"id":"d49aed14-b5b0-4e49-972f-f823817ed93d","first_name":"Fernando","last_name":"Fernando"}]
 ```
 
 with params
@@ -100,15 +100,15 @@ offset: The index of the first item which has to be returned
 ```sh
 curl -X GET 'http://localhost:3030/people?limit=10&offset=0'
 
-[{"id":"32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9","name":"Esme"},{"id":"d3bc8246-53da-4275-b833-5feb4489741d","name":"Jorge"},{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9","name":"Luis"}]
+[{"id":"27c6bdd9-67d6-4503-884d-d75aba152f44","first_name":"Esme","last_name":"Esme"},{"id":"d49aed14-b5b0-4e49-972f-f823817ed93d","first_name":"Fernando","last_name":"Fernando"}]
 ```
 
 * Calling get a person endpoint
 
 ```sh
-curl -X GET http://localhost:3030/people/32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9
+curl -X GET http://localhost:3030/people/27c6bdd9-67d6-4503-884d-d75aba152f44
 
-{"id":"32fed5e3-4a2b-4dfb-82b1-56e5ebcc0ed9","name":"Esme"}
+{"id":"27c6bdd9-67d6-4503-884d-d75aba152f44","first_name":"Esme","last_name":"Esme"}
 ```
 
 ```sh
@@ -120,10 +120,10 @@ Person not found
 
 ```sh
 curl -H "Content-Type: application/json" \
---data '{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9", "name":"LuisFer"}' \
+--data '{"id":"27c6bdd9-67d6-4503-884d-d75aba152f44", "first_name":"Esme", "last_name":"Emse"}' \
 -X PUT http://localhost:3030/people
 
-{"id":"f1601fc5-f0c9-4950-8017-e094b284cad9","name":"LuisFer"}
+{"id":"27c6bdd9-67d6-4503-884d-d75aba152f44","first_name":"Esme","last_name":"Emse"}
 ```
 
 * Delete a person endpoint

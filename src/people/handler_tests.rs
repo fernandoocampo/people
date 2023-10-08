@@ -15,11 +15,13 @@ mod handler_tests {
         let people_store = vec![
             Person {
                 id: PersonID("1".to_string()),
-                name: "Luis".to_string(),
+                first_name: "Luis".to_string(),
+                last_name: "Luis".to_string(),
             },
             Person {
                 id: PersonID("2".to_string()),
-                name: "Fernando".to_string(),
+                first_name: "Fernando".to_string(),
+                last_name: "Fernando".to_string(),
             },
         ];
 
@@ -34,11 +36,13 @@ mod handler_tests {
         let expected_people: Vec<Person> = vec![
             Person {
                 id: PersonID("1".to_string()),
-                name: "Luis".to_string(),
+                first_name: "Luis".to_string(),
+                last_name: "Luis".to_string(),
             },
             Person {
                 id: PersonID("2".to_string()),
-                name: "Fernando".to_string(),
+                first_name: "Fernando".to_string(),
+                last_name: "Fernando".to_string(),
             },
         ];
 
@@ -72,7 +76,8 @@ mod handler_tests {
         // Given
         let person_store = Person {
             id: PersonID("1".to_string()),
-            name: "Luis".to_string(),
+            first_name: "Luis".to_string(),
+            last_name: "Luis".to_string(),
         };
 
         let a_censor = DummyCensor::new("".to_string(), false);
@@ -82,7 +87,8 @@ mod handler_tests {
         let person_id = "1".to_string();
         let expected_person = Person {
             id: PersonID("1".to_string()),
-            name: "Luis".to_string(),
+            first_name: "Luis".to_string(),
+            last_name: "Luis".to_string(),
         };
         let runtime = Runtime::new().expect("unable to create runtime to test get person");
         // When
@@ -127,9 +133,10 @@ mod handler_tests {
         // Given
         let person = Person {
             id: PersonID("3".to_string()),
-            name: "esme".to_string(),
+            first_name: "esme".to_string(),
+            last_name: "esme".to_string(),
         };
-        let new_person = NewPerson::new("esme".to_string());
+        let new_person = NewPerson::new("esme".to_string(), "esme".to_string());
         let mut expected_result = SavePersonSuccess { id: "".to_string() };
         let a_censor = DummyCensor::new("".to_string(), false);
         let a_store = DummyStore::new_with_add_person(Some(person), false);
@@ -218,18 +225,21 @@ mod handler_tests {
         // Given
         let a_person = Person {
             id: PersonID("1".to_string()),
-            name: "Luisfer".to_string(),
+            first_name: "Luisfer".to_string(),
+            last_name: "Luisfer".to_string(),
         };
         let person_to_return = Some(Person {
             id: PersonID("1".to_string()),
-            name: "Luisfer".to_string(),
+            first_name: "Luisfer".to_string(),
+            last_name: "Luisfer".to_string(),
         });
         let a_censor = DummyCensor::new("".to_string(), false);
         let a_store = DummyStore::new_with_update_person(person_to_return, false);
         let person_service = service::Service::new(a_store, a_censor);
         let expected_result = Person {
             id: PersonID("1".to_string()),
-            name: "Luisfer".to_string(),
+            first_name: "Luisfer".to_string(),
+            last_name: "Luisfer".to_string(),
         };
         let runtime = Runtime::new().expect("unable to create runtime to test update person");
         // When
@@ -260,7 +270,8 @@ mod handler_tests {
         // Given
         let a_person = Person {
             id: PersonID("1".to_string()),
-            name: "Luisfer".to_string(),
+            first_name: "Luisfer".to_string(),
+            last_name: "Luisfer".to_string(),
         };
         let a_censor = DummyCensor::new("".to_string(), false);
         let a_store = DummyStore::new_with_update_person(None, true);
@@ -429,6 +440,17 @@ mod handler_tests {
     #[async_trait]
     impl censor::Censorious for DummyCensor {
         async fn censor(&self, word: String) -> Result<String, error::Error> {
+            match self.is_error {
+                true => Err(error::Error::ValidateBadWordsError),
+                false => {
+                    if self.response.is_empty() {
+                        return Ok(word.clone());
+                    }
+                    return Ok(self.response.clone());
+                }
+            }
+        }
+        async fn censor_with_backoff(&self, word: String) -> Result<String, error::Error> {
             match self.is_error {
                 true => Err(error::Error::ValidateBadWordsError),
                 false => {

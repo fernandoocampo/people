@@ -1,10 +1,12 @@
 {
     "1": {
         "id": "1",
-        "name": "Luis"
+        "first_name": "Luis",
+        "last_name": "Luis"
     },
     "2": {
         "id": "2",
-        "name": "Fernando"
+        "first_name": "Fernando",
+        "last_name": "Fernando"
     }
 }

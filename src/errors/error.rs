@@ -19,6 +19,8 @@ pub enum Error {
     DeletePersonError,
     AddPetError,
     ValidateBadWordsError,
+    ClientError(APILayerError),
+    ServerError(APILayerError),
 }
 
 impl Reject for Error {}
@@ -37,7 +39,31 @@ impl Display for Error {
             Error::DeletePersonError => write!(f, "Unable to delete person"),
             Error::AddPetError => write!(f, "Unable to add pet"),
             Error::ValidateBadWordsError => write!(f, "cannot validate bad words"),
+            Error::ClientError(ref err) => write!(f, "External Server error: {}", err),
+            Error::ServerError(ref err) => write!(f, "External Server error: {}", err),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct APILayerError {
+    pub status: u16,
+    pub message: String,
+}
+
+impl std::fmt::Display for APILayerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Status: {}, Message: {}", self.status, self.message)
+    }
+}
+
+impl std::cmp::PartialEq for APILayerError {
+    fn eq(&self, other: &Self) -> bool {
+        if self.status != other.status {
+            return false;
+        }
+
+        self.message == other.message
     }
 }
 
@@ -90,6 +116,16 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
     } else if let Some(Error::ValidateBadWordsError) = r.find() {
         Ok(warp::reply::with_status(
             "cannot validate bad words".to_string(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        ))
+    } else if let Some(Error::ClientError(_e)) = r.find() {
+        Ok(warp::reply::with_status(
+            "Internal Server Error".to_string(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        ))
+    } else if let Some(Error::ServerError(_e)) = r.find() {
+        Ok(warp::reply::with_status(
+            "Internal Server Error".to_string(),
             StatusCode::INTERNAL_SERVER_ERROR,
         ))
     } else {
