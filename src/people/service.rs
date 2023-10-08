@@ -64,24 +64,51 @@ impl<T: storage::Storer, C: censor::Censorious> Service<T, C> {
     pub async fn add_person(&self, new_person: NewPerson) -> Result<Person, Error> {
         debug!("start adding people {:?}", new_person);
 
-        debug!("checking bad words");
+        let person = self.build_new_person(new_person).await;
 
-        let new_name = match self.censorious.censor(new_person.first_name.clone()).await {
-            Ok(res) => res,
-            Err(err) => return Err(err),
-        };
+        if person.is_err() {
+            error!("checking bad words in first and last name values");
+            return Err(Error::ValidateBadWordsError);
+        }
 
-        let mut person = new_person.to_person();
-        person.first_name = new_name;
         debug!("new person with id {:?} is about to be saved", person);
 
-        match self.store.add_person(person.clone()).await {
+        match self.store.add_person(person.unwrap()).await {
             Ok(person) => Ok(person),
             Err(e) => {
                 error!("adding person into repository: {:?}", e);
                 Err(Error::CreatePersonError)
             }
         }
+    }
+
+    async fn build_new_person(&self, new_person: NewPerson) -> Result<Person, Error> {
+        // https://ryhl.io/blog/actors-with-tokio/
+        // https://github.com/tokio-rs/tokio/discussions/4426
+        debug!("checking bad words in first name value");
+        let new_first_name = self.censorious.censor(new_person.first_name.clone());
+        debug!("checking bad words in last name value");
+        let new_last_name = self.censorious.censor(new_person.last_name.clone());
+
+        let (new_first_name, new_last_name) = tokio::join!(new_first_name, new_last_name);
+
+        if new_first_name.is_err() {
+            let err = new_first_name.unwrap_err();
+            error!("checking bad words in first name value: {}", err);
+            return Err(err);
+        }
+
+        if new_last_name.is_err() {
+            let err = new_first_name.unwrap_err();
+            error!("checking bad words in last name value: {}", err);
+            return Err(err);
+        }
+
+        let mut person = new_person.to_person();
+        person.first_name = new_first_name.unwrap();
+        person.last_name = new_last_name.unwrap();
+
+        Ok(person)
     }
 
     pub async fn delete_person(&self, person_id: PersonID) -> Result<bool, Error> {
