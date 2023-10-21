@@ -1,3 +1,4 @@
+use argon2::Config;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -57,7 +58,7 @@ impl NewAccount {
         Account {
             id: AccountID(uuid::Uuid::new_v4().to_string()),
             email: self.email.clone(),
-            password: self.password.clone(),
+            password: hash(self.password.as_bytes()),
         }
     }
 }
@@ -65,5 +66,27 @@ impl NewAccount {
 impl fmt::Display for AccountID {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+fn hash(password: &[u8]) -> String {
+    let salt = rand::random::<[u8; 32]>();
+    // you can use Config::default(), but that one will take too long.
+    let config = Config::original();
+    argon2::hash_encoded(password, &salt, &config).unwrap()
+}
+
+#[cfg(test)]
+mod account_test {
+    use crate::types::accounts;
+
+    #[test]
+    fn test_hash_password() {
+        // Given
+        let a_password = "abcdefhi";
+        // When
+        let got = accounts::hash(a_password.as_bytes());
+        // Then
+        assert_eq!(false, got == a_password);
     }
 }
