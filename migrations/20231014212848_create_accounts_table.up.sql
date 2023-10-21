@@ -1,0 +1,6 @@
+-- Add up migration script here
+CREATE TABLE IF NOT EXISTS accounts (
+    ID VARCHAR(36) NOT NULL PRIMARY KEY,
+    EMAIL VARCHAR(255) NOT NULL,
+    PASSWORD VARCHAR(255) NOT NULL
+);

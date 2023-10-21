@@ -6,6 +6,7 @@ pub mod errors;
 pub mod people;
 pub mod storage;
 pub mod types;
+pub mod users;
 
 #[tokio::main]
 async fn main() {

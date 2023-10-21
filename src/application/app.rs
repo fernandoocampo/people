@@ -9,8 +9,8 @@ use warp::{http::Method, Filter};
 
 use crate::censors::censor;
 use crate::errors::error;
-use crate::people;
 use crate::storage::db;
+use crate::{people, users};
 
 pub async fn run() {
     println!("🪵\tInitializing logger...");
@@ -23,8 +23,12 @@ pub async fn run() {
     let censorious = new_censorious().await;
 
     log::info!("🔮\tInitializing people handler...");
-    let service = new_people_service(store, censorious).await;
+    let service = new_people_service(store.clone(), censorious).await;
     let service_filter = warp::any().map(move || service.clone());
+
+    log::info!("🖊️\tInitializing users handler...");
+    let users_service = new_users_service(store).await;
+    let users_service_filter = warp::any().map(move || users_service.clone());
 
     log::info!("🪜 \tEstablishing API routes...");
 
@@ -32,6 +36,22 @@ pub async fn run() {
         .allow_any_origin()
         .allow_header("content-type")
         .allow_methods(&[Method::PUT, Method::DELETE, Method::GET, Method::POST]);
+
+    log::info!("👤\tCreating users endpoint: POST /signup");
+    let register = warp::post()
+        .and(warp::path("signup"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and(users_service_filter.clone())
+        .and_then(users::handler::register)
+        .with(warp::trace(|info| {
+            tracing::info_span!(
+                "register request",
+                method = %info.method(),
+                path = %info.path(),
+                id = %uuid::Uuid::new_v4(),
+            )
+        }));
 
     log::info!("👥\tCreating people endpoint: GET /people");
     let get_people = warp::get()
@@ -98,6 +118,7 @@ pub async fn run() {
         .or(put_person)
         .or(post_person)
         .or(delete_person)
+        .or(register)
         .with(cors)
         .with(warp::trace::request())
         .recover(error::return_error);
@@ -204,4 +225,8 @@ async fn new_people_service<T: people::storage::Storer, C: people::censor::Censo
     censorious: C,
 ) -> people::service::Service<T, C> {
     people::service::Service::new(store, censorious)
+}
+
+async fn new_users_service<T: users::storage::Storer>(store: T) -> users::service::Service<T> {
+    users::service::Service::new(store)
 }

@@ -18,6 +18,7 @@ pub enum Error {
     UpdatePersonError,
     DeletePersonError,
     AddPetError,
+    CreateAccountError,
     ValidateBadWordsError,
     ClientError(APILayerError),
     ServerError(APILayerError),
@@ -35,6 +36,7 @@ impl Display for Error {
             Error::GetPeopleError => write!(f, "Unable to get people"),
             Error::GetPersonError => write!(f, "Unable to get person"),
             Error::CreatePersonError => write!(f, "Unable to create person"),
+            Error::CreateAccountError => write!(f, "Unable to create account"),
             Error::UpdatePersonError => write!(f, "Unable to update person"),
             Error::DeletePersonError => write!(f, "Unable to delete person"),
             Error::AddPetError => write!(f, "Unable to add pet"),
@@ -81,6 +83,11 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
     } else if let Some(Error::CreatePersonError) = r.find() {
         Ok(warp::reply::with_status(
             "Cannot create person".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::CreateAccountError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot create account".to_string(),
             StatusCode::UNPROCESSABLE_ENTITY,
         ))
     } else if let Some(Error::UpdatePersonError) = r.find() {

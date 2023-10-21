@@ -1,11 +1,13 @@
 use crate::errors::error::Error;
-use crate::people::storage;
+use crate::people::storage::Storer as people_storage;
+use crate::users::storage::Storer as users_storage;
 use async_trait::async_trait;
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::Row;
 use tracing::debug;
 
 use crate::types::{
+    accounts::{Account, AccountID},
     people::{Person, PersonID},
     pets::{Pet, PetID},
 };
@@ -33,7 +35,7 @@ impl Store {
 }
 
 #[async_trait]
-impl storage::Storer for Store {
+impl people_storage for Store {
     async fn get_people(&self, limit: Option<i32>, offset: i32) -> Result<Vec<Person>, Error> {
         match sqlx::query("SELECT * FROM people LIMIT $1 OFFSET $2")
             .bind(limit)
@@ -160,6 +162,44 @@ impl storage::Storer for Store {
                     Err(Error::DatabaseQueryError)
                 }
             }
+    }
+}
+
+#[async_trait]
+impl users_storage for Store {
+    async fn add_account(&self, new_account: Account) -> Result<AccountID, Error> {
+        debug!("adding account to postgres database: {}", new_account.email);
+
+        match sqlx::query(
+            "INSERT INTO accounts (ID, EMAIL, PASSWORD) VALUES ($1, $2, $3) RETURNING ID",
+        )
+        .bind(new_account.id.to_string())
+        .bind(new_account.email)
+        .bind(new_account.password)
+        .map(|row: PgRow| AccountID(row.get("id")))
+        .fetch_one(&self.connection)
+        .await
+        {
+            Ok(account_id) => {
+                debug!("new account was added to postgres database: {}", account_id);
+                Ok(account_id)
+            }
+            Err(e) => {
+                tracing::event!(
+                    tracing::Level::ERROR,
+                    code = e
+                        .as_database_error()
+                        .unwrap()
+                        .code()
+                        .unwrap()
+                        .parse::<i32>()
+                        .unwrap(),
+                    db_message = e.as_database_error().unwrap().message(),
+                    constraint = e.as_database_error().unwrap().constraint().unwrap()
+                );
+                Err(Error::DatabaseQueryError)
+            }
+        }
     }
 }
 

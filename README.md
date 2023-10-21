@@ -75,6 +75,16 @@ trace
 
 ## How to call the API?
 
+* Register a User endpoint
+
+```sh
+curl -H "Content-Type: application/json" \
+--data '{"email": "esme@anydomain.com", "password": "123456"}' \
+-X POST http://localhost:3030/signup
+
+{"id":"98bd8597-1ead-4cc3-adfc-453441b3002a"}
+```
+
 * Create a person endpoint
 
 ```sh
