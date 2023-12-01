@@ -24,11 +24,11 @@ lint-clippy: ## apply linter clippy.
 
 .PHONY: start-services
 start-services: ## start database
-	docker compose -f docker-compose.yml up
+	podman-compose -f docker-compose.yml up
 
 .PHONY: stop-services
 stop-services: ## stop database
-	docker compose down --volumes
+	podman-compose --file docker-compose.yml down --volumes
 
 .PHONY: add-person
 add-person: ## add a person, name will be $(date)
@@ -40,4 +40,6 @@ add-person: ## add a person, name will be $(date)
 get-people: ## get the existing people in the service
 	curl -X GET http://localhost:3030/people
 
-
+.PHONY: connect-db
+connect-db: ## connect to postgresql database
+	psql -U pipol -h localhost -p 5432

@@ -17,7 +17,7 @@ pub async fn register(
             Ok(warp::reply::json(&result))
         }
         Err(e) => {
-            error!("adding account {:?}", new_account);
+            error!("adding account {}", new_account.email);
             Err(warp::reject::custom(e))
         }
     }

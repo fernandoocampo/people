@@ -26,7 +26,11 @@ impl<T: storage::Storer> Service<T> {
                 Ok(id)
             }
             Err(e) => {
-                error!("adding account {:?} into repository: {:?}", account, e);
+                if e == Error::DatabaseUniqueError {
+                    error!("adding account {} : {:?}", account.email, e);
+                    return Err(Error::DuplicateAccountError);
+                }
+                error!("adding account {} into repository: {:?}", account.email, e);
                 Err(Error::CreateAccountError)
             }
         }

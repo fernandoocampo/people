@@ -12,6 +12,8 @@ use crate::types::{
     pets::{Pet, PetID},
 };
 
+const DUPLICATE_KEY: i32 = 23505;
+
 #[derive(Debug, Clone)]
 pub struct Store {
     pub connection: PgPool,
@@ -185,6 +187,15 @@ impl users_storage for Store {
                 Ok(account_id)
             }
             Err(e) => {
+                if get_sql_code(&e) == DUPLICATE_KEY {
+                    tracing::event!(
+                        tracing::Level::INFO, 
+                        message = "account already exists",
+                    );
+
+                    return Err(Error::DatabaseUniqueError);
+                }
+
                 tracing::event!(
                     tracing::Level::ERROR,
                     code = e
@@ -201,6 +212,15 @@ impl users_storage for Store {
             }
         }
     }
+}
+
+fn get_sql_code(err: &sqlx::error::Error) -> i32 {
+    err
+        .as_database_error()
+        .unwrap().code()
+        .unwrap()
+        .parse::<i32>()
+        .unwrap()
 }
 
 // impl Default for Store {

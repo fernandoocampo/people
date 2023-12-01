@@ -12,6 +12,7 @@ pub enum Error {
     MissingParameters,
     PersonNotFound,
     DatabaseQueryError,
+    DatabaseUniqueError,
     GetPeopleError,
     GetPersonError,
     CreatePersonError,
@@ -19,6 +20,7 @@ pub enum Error {
     DeletePersonError,
     AddPetError,
     CreateAccountError,
+    DuplicateAccountError,
     ValidateBadWordsError,
     ClientError(APILayerError),
     ServerError(APILayerError),
@@ -33,10 +35,12 @@ impl Display for Error {
             Error::MissingParameters => write!(f, "Missing parameter"),
             Error::PersonNotFound => write!(f, "Person not found"),
             Error::DatabaseQueryError => write!(f, "Cannot update, invalid data"),
+            Error::DatabaseUniqueError => write!(f, "Cannot create, duplicate data"),
             Error::GetPeopleError => write!(f, "Unable to get people"),
             Error::GetPersonError => write!(f, "Unable to get person"),
             Error::CreatePersonError => write!(f, "Unable to create person"),
             Error::CreateAccountError => write!(f, "Unable to create account"),
+            Error::DuplicateAccountError => write!(f, "Account already exists"),
             Error::UpdatePersonError => write!(f, "Unable to update person"),
             Error::DeletePersonError => write!(f, "Unable to delete person"),
             Error::AddPetError => write!(f, "Unable to add pet"),
@@ -89,6 +93,11 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
         Ok(warp::reply::with_status(
             "Cannot create account".to_string(),
             StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::DuplicateAccountError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Account already exists".to_string(),
+            StatusCode::CONFLICT,
         ))
     } else if let Some(Error::UpdatePersonError) = r.find() {
         Ok(warp::reply::with_status(
