@@ -1,6 +1,6 @@
 use crate::errors::error::Error;
 use crate::{
-    types::accounts::{AccountID, NewAccount},
+    types::accounts::{AccountID, Login, NewAccount},
     users::storage,
 };
 use tracing::{debug, error, info};
@@ -33,6 +33,25 @@ impl<T: storage::Storer> Service<T> {
                 error!("adding account {} into repository: {:?}", account.email, e);
                 Err(Error::CreateAccountError)
             }
+        }
+    }
+
+    pub async fn login(&self, login: Login) -> Result<String, Error> {
+        match self.store.get_account(login.email.clone()).await {
+            Ok(account) => match account.verify_password(login.password.as_bytes()) {
+                Ok(verified) => {
+                    if verified {
+                        Ok(account.issue_token())
+                    } else {
+                        Err(Error::WrongPasswordError)
+                    }
+                }
+                Err(e) => {
+                    error!("verifying login password for {} got: {:?}", login.email, e);
+                    Err(Error::LoginError)
+                }
+            },
+            Err(_) => Err(Error::GetAccountError),
         }
     }
 }

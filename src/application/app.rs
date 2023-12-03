@@ -53,6 +53,22 @@ pub async fn run() {
             )
         }));
 
+    log::info!("🔑\tDoing login endpoint: POST /login");
+    let login = warp::post()
+        .and(warp::path("login"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and(users_service_filter.clone())
+        .and_then(users::handler::login)
+        .with(warp::trace(|info| {
+            tracing::info_span!(
+                "login request",
+                method = %info.method(),
+                path = %info.path(),
+                id = %uuid::Uuid::new_v4(),
+            )
+        }));
+
     log::info!("👥\tCreating people endpoint: GET /people");
     let get_people = warp::get()
         .and(warp::path("people"))
@@ -119,6 +135,7 @@ pub async fn run() {
         .or(post_person)
         .or(delete_person)
         .or(register)
+        .or(login)
         .with(cors)
         .with(warp::trace::request())
         .recover(error::return_error);

@@ -5,6 +5,7 @@ use std::fmt::{Debug, Error as FmtError, Formatter};
 
 #[async_trait]
 pub trait Storer {
+    async fn get_account(&self, email: String) -> Result<Account, Error>;
     async fn add_account(&self, new_account: Account) -> Result<AccountID, Error>;
 }
 

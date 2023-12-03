@@ -20,8 +20,12 @@ pub enum Error {
     DeletePersonError,
     AddPetError,
     CreateAccountError,
+    GetAccountError,
+    AccountNotFound,
     DuplicateAccountError,
     ValidateBadWordsError,
+    LoginError,
+    WrongPasswordError,
     ClientError(APILayerError),
     ServerError(APILayerError),
 }
@@ -40,6 +44,10 @@ impl Display for Error {
             Error::GetPersonError => write!(f, "Unable to get person"),
             Error::CreatePersonError => write!(f, "Unable to create person"),
             Error::CreateAccountError => write!(f, "Unable to create account"),
+            Error::GetAccountError => write!(f, "Unable to get account"),
+            Error::AccountNotFound => write!(f, "Account not found"),
+            Error::LoginError => write!(f, "Unable to verify user"),
+            Error::WrongPasswordError => write!(f, "User or password are not valid"),
             Error::DuplicateAccountError => write!(f, "Account already exists"),
             Error::UpdatePersonError => write!(f, "Unable to update person"),
             Error::DeletePersonError => write!(f, "Unable to delete person"),
@@ -103,6 +111,16 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
         Ok(warp::reply::with_status(
             "Cannot update person".to_string(),
             StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::LoginError) = r.find() {
+        Ok(warp::reply::with_status(
+            "Cannot login".to_string(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ))
+    } else if let Some(Error::WrongPasswordError) = r.find() {
+        Ok(warp::reply::with_status(
+            "User or Password are not valid".to_string(),
+            StatusCode::UNAUTHORIZED,
         ))
     } else if let Some(Error::DeletePersonError) = r.find() {
         Ok(warp::reply::with_status(

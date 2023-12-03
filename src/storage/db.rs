@@ -188,10 +188,7 @@ impl users_storage for Store {
             }
             Err(e) => {
                 if get_sql_code(&e) == DUPLICATE_KEY {
-                    tracing::event!(
-                        tracing::Level::INFO, 
-                        message = "account already exists",
-                    );
+                    tracing::event!(tracing::Level::INFO, message = "account already exists");
 
                     return Err(Error::DatabaseUniqueError);
                 }
@@ -212,12 +209,34 @@ impl users_storage for Store {
             }
         }
     }
+
+    async fn get_account(&self, email: String) -> Result<Account, Error> {
+        debug!("getting account from postgres database: {}", email);
+
+        match sqlx::query("SELECT * FROM accounts WHERE email = $1")
+            .bind(email)
+            .map(|row: PgRow| Account {
+                id: AccountID(row.get("id")),
+                email: row.get("email"),
+                password: row.get("password"),
+            })
+            .fetch_one(&self.connection)
+            .await
+        {
+            Ok(account) => Ok(account),
+            Err(sqlx::Error::RowNotFound) => Ok(Account::default()),
+            Err(e) => {
+                tracing::event!(tracing::Level::ERROR, "{:?}", e);
+                Err(Error::DatabaseQueryError)
+            }
+        }
+    }
 }
 
 fn get_sql_code(err: &sqlx::error::Error) -> i32 {
-    err
-        .as_database_error()
-        .unwrap().code()
+    err.as_database_error()
+        .unwrap()
+        .code()
         .unwrap()
         .parse::<i32>()
         .unwrap()

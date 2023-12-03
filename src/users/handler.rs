@@ -1,4 +1,4 @@
-use crate::types::accounts::{NewAccount, SaveAccountSuccess};
+use crate::types::accounts::{Login, NewAccount, SaveAccountSuccess};
 use crate::users::{service, storage};
 use tracing::{debug, error};
 
@@ -18,6 +18,24 @@ pub async fn register(
         }
         Err(e) => {
             error!("adding account {}", new_account.email);
+            Err(warp::reject::custom(e))
+        }
+    }
+}
+
+pub async fn login(
+    login: Login,
+    service: service::Service<impl storage::Storer>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    debug!("start login: {}", login.email);
+
+    match service.login(login.clone()).await {
+        Ok(token) => {
+            debug!("login was successful: {}", login.email);
+            Ok(warp::reply::json(&token))
+        }
+        Err(e) => {
+            error!("doing login: {:?}", e);
             Err(warp::reject::custom(e))
         }
     }
